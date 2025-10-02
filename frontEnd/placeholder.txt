@@ -1,1 +1,0 @@
-Remove this file upon creation of first front end file
