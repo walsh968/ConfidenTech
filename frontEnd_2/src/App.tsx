@@ -5,6 +5,8 @@ import { ExportButton } from "./components/export-button";
 import { ModeToggle } from "./components/mode-toggle";
 import { InputAnalysis } from "./components/input-analysis";
 import { Separator } from "./components/ui/separator";
+import React from "react";
+
 
 // Mock data for AI outputs
 const mockAIOutputs = [

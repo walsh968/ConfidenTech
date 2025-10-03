@@ -1,6 +1,8 @@
 import { Label } from "./ui/label";
 import { Slider } from "./ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import React from "react";
+
 
 interface FilterControlsProps {
   confidenceThreshold: number;

@@ -3,6 +3,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/t
 import { Badge } from "./ui/badge";
 import { CircleDot } from "lucide-react";
 import type { ViewMode } from "../App";
+import React from "react";
+
 
 interface ConfidenceIndicatorProps {
   confidence: number;

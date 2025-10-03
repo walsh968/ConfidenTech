@@ -9,6 +9,8 @@ import { Button } from "./ui/button";
 import { ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { useState } from "react";
 import type { AIOutput, ViewMode } from "../App";
+import React from "react";
+
 
 interface AIOutputCardProps {
   output: AIOutput;

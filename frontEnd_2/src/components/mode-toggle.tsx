@@ -2,6 +2,8 @@ import { Button } from "./ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Settings, GraduationCap, AlertTriangle } from "lucide-react";
 import type { ViewMode } from "../App";
+import React from "react";
+
 
 interface ModeToggleProps {
   viewMode: ViewMode;

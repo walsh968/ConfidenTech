@@ -1,6 +1,8 @@
 import { Button } from "./ui/button";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { cn } from "./ui/utils";
+import React from "react";
+
 
 interface FeedbackWidgetProps {
   feedback: "agree" | "disagree" | null;

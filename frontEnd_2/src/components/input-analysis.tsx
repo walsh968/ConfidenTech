@@ -4,6 +4,8 @@ import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { Card, CardContent } from "./ui/card";
 import { Loader2, Brain } from "lucide-react";
+import React from "react";
+
 
 interface InputAnalysisProps {
   onAnalyze: (text: string) => void;

@@ -3,6 +3,8 @@ import { Button } from "./ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Download, FileText, FileSpreadsheet } from "lucide-react";
 import type { AIOutput } from "../App";
+import React from "react";
+
 
 interface ExportButtonProps {
   outputs: AIOutput[];

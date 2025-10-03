@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Separator } from "./ui/separator";
 import { ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import { cn } from "./ui/utils";
+import React from "react";
+
 
 interface Reference {
   id: string;
