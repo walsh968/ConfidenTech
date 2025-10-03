@@ -1,4 +1,4 @@
-// This code was extracted from Figma, make adjustments as needed but try to replicate Figma design
+// // This code was extracted from Figma, make adjustments as needed but try to replicate Figma design
 // import { Card, CardContent, CardHeader } from "./ui/card";
 // import { Badge } from "./ui/badge";
 // import { ConfidenceIndicator } from "./ConfidenceIndicator";
