@@ -9,7 +9,7 @@ import React from "react";
 
 
 // Mock data for AI outputs
-const mockAIOutputs = [
+const mockAIOutputs: AIOutput[] = [
   {
     id: "1",
     text: "Climate change is primarily caused by human activities, particularly the emission of greenhouse gases from burning fossil fuels. The scientific consensus is overwhelming, with over 97% of climate scientists agreeing on this fact.",
