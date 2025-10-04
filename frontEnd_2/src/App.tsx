@@ -1,10 +1,12 @@
 import { useState, useMemo } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AIOutputCard } from "./components/ai-output-card";
 import { FilterControls } from "./components/filter-controls";
 import { ExportButton } from "./components/export-button";
 import { ModeToggle } from "./components/mode-toggle";
 import { InputAnalysis } from "./components/input-analysis";
 import { Separator } from "./components/ui/separator";
+import { LoginPage } from "./components/LoginPage";
 import React from "react";
 
 
@@ -156,7 +158,8 @@ export type AIOutput = {
 
 export type ViewMode = "educational" | "critical";
 
-export default function App() {
+// Dashboard component (moved from App)
+function Dashboard() {
   const [outputs, setOutputs] = useState<AIOutput[]>(mockAIOutputs);
   const [confidenceThreshold, setConfidenceThreshold] = useState(0);
   const [sortOrder, setSortOrder] = useState<"high-to-low" | "low-to-high">("high-to-low");
@@ -336,5 +339,17 @@ export default function App() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<Dashboard />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
   );
 }
