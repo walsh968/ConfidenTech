@@ -7,6 +7,8 @@ import { ModeToggle } from "./components/mode-toggle";
 import { InputAnalysis } from "./components/input-analysis";
 import { Separator } from "./components/ui/separator";
 import { LoginPage } from "./components/LoginPage";
+import { RegisterPage } from "./components/RegisterPage";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import React from "react";
 
 
@@ -278,18 +280,7 @@ function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-primary text-primary-foreground shadow-sm">
-        <div className="container mx-auto px-4 py-6 max-w-6xl">
-          <h1 className="text-white mb-2">AI Assistant Confidence Dashboard</h1>
-          <p className="text-primary-foreground/80">
-            Monitor and evaluate AI response confidence levels with detailed analysis and references
-          </p>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div>
         {/* Input Analysis Section */}
         <div className="mb-8">
           <InputAnalysis onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
@@ -337,6 +328,63 @@ function Dashboard() {
             ))
           )}
         </div>
+    </div>
+  );
+}
+
+// Protected Route Component
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+// Dashboard with logout functionality
+function DashboardWithAuth() {
+  const { user, logout } = useAuth();
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header with user info and logout */}
+      <header className="bg-primary text-primary-foreground shadow-sm">
+        <div className="container mx-auto px-4 py-6 max-w-6xl">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-white mb-2">AI Assistant Confidence Dashboard</h1>
+              <p className="text-primary-foreground/80">
+                Monitor and evaluate AI response confidence levels with detailed analysis and references
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm">Welcome, {user?.first_name || user?.email}</span>
+              <button
+                onClick={logout}
+                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-md text-sm transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <Dashboard />
       </div>
     </div>
   );
@@ -344,12 +392,22 @@ function Dashboard() {
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<Dashboard />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <DashboardWithAuth />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }

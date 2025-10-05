@@ -1,30 +1,36 @@
 import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { useAuth } from '../contexts/AuthContext';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
-    // Simulate login process
     try {
-      // Add your login logic here
-      console.log('Login attempt:', { email, password });
+      const result = await login(email, password);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Handle successful login
-      console.log('Login successful');
+      if (result.success) {
+        // Navigate to dashboard on successful login
+        navigate('/');
+      } else {
+        setError(result.error || 'Login failed');
+      }
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('Login error:', error);
+      setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -40,6 +46,11 @@ export function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -78,9 +89,9 @@ export function LoginPage() {
           <div className="mt-4 text-center text-sm text-muted-foreground">
             <p>
               Don't have an account?{' '}
-              <a href="#" className="text-primary hover:underline">
+              <Link to="/register" className="text-primary hover:underline">
                 Sign up
-              </a>
+              </Link>
             </p>
           </div>
         </CardContent>
