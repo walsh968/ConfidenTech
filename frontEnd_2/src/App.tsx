@@ -134,13 +134,26 @@ const mockAIOutputs: AIOutput[] = [
     ],
     comparisonSummary: "While JWST has the technical capability to detect atmospheric signatures, the likelihood of finding definitive biosignatures remains speculative. Scientific sources emphasize the challenges and uncertainties involved.",
     userFeedback: null
-  }
+  },
+  {
+    id: "6",
+    text: "This response currently has an unknown confidence from the backend.",
+    confidence: "Unknown", 
+    timestamp: "2024-01-10T08:00:00Z",
+    category: "General Analysis",
+    references: [],
+    comparisonSummary: "Backend did not provide a numeric confidence score.",
+    userFeedback: null,
+  },
+  
 ];
+
+type Confidence = number | "Unknown";
 
 export type AIOutput = {
   id: string;
   text: string;
-  confidence: number;
+  confidence: Confidence;
   timestamp: string;
   category: string;
   references: {
@@ -154,6 +167,14 @@ export type AIOutput = {
   userFeedback: "agree" | "disagree" | null;
 };
 
+function sortKey(value: Confidence): number {
+  return value === "Unknown" ? -1 : Number(value);
+}
+
+function labelOf(value: Confidence): string {
+  return value === "Unknown" ? "Unknown" : `${value}%`;
+}
+
 export type ViewMode = "educational" | "critical";
 
 export default function App() {
@@ -165,13 +186,19 @@ export default function App() {
 
   // Filter and sort outputs
   const filteredAndSortedOutputs = useMemo(() => {
-    let filtered = outputs.filter(output => output.confidence >= confidenceThreshold);
-    
+    const filtered = outputs.filter(o =>
+      o.confidence === "Unknown" || Number(o.confidence) >= confidenceThreshold
+    );
+
     return filtered.sort((a, b) => {
+      const ka = sortKey(a.confidence);
+      const kb = sortKey(b.confidence);
       if (sortOrder === "high-to-low") {
-        return b.confidence - a.confidence;
+        return kb - ka;
       } else {
-        return a.confidence - b.confidence;
+        if (a.confidence === "Unknown" && b.confidence !== "Unknown") return 1;
+        if (b.confidence === "Unknown" && a.confidence !== "Unknown") return -1;
+        return ka - kb;
       }
     });
   }, [outputs, confidenceThreshold, sortOrder]);
@@ -218,7 +245,7 @@ export default function App() {
     const hasScientificTerms = /\b(study|research|evidence|data|analysis|according to)\b/i.test(text);
     const hasPredictive = /\b(will|might|could|should|likely|probably|may)\b/i.test(text);
     
-    let confidence: number;
+    // let confidence: number;
     let category: string;
     
     // Determine category based on content
@@ -237,13 +264,15 @@ export default function App() {
     }
     
     // Calculate confidence based on text characteristics
-    if (hasScientificTerms && hasNumbers && textLength > 100) {
-      confidence = Math.floor(75 + Math.random() * 20); // 75-95%
-    } else if (hasPredictive || textLength < 50) {
-      confidence = Math.floor(30 + Math.random() * 25); // 30-55%
-    } else {
-      confidence = Math.floor(55 + Math.random() * 25); // 55-80%
-    }
+    const isUnknown = Math.random() < 0.25;
+    const confidence: Confidence = isUnknown
+      ? "Unknown"
+      : (() => {
+          if (hasScientificTerms && hasNumbers && textLength > 100)
+            return Math.floor(75 + Math.random() * 20); // 75-95
+          if (hasPredictive || textLength < 50) return Math.floor(30 + Math.random() * 25); // 30-55
+          return Math.floor(55 + Math.random() * 25); // 55-80
+        })();
 
     const newId = `analysis-${Date.now()}`;
     
@@ -269,7 +298,7 @@ export default function App() {
           userRating: null
         }
       ],
-      comparisonSummary: `Analysis of the provided text shows ${confidence >= 70 ? 'strong' : confidence >= 50 ? 'moderate' : 'limited'} confidence based on content structure, factual indicators, and language patterns. ${hasScientificTerms ? 'Scientific terminology detected suggests higher reliability.' : ''} ${hasPredictive ? 'Predictive language indicates inherent uncertainty.' : ''}`,
+      comparisonSummary: `Analysis of the provided text shows ${(confidence as number) >= 70 ? "strong" : (confidence as number) >= 50 ? 'moderate' : 'limited'} confidence based on content structure, factual indicators, and language patterns. ${hasScientificTerms ? 'Scientific terminology detected suggests higher reliability.' : ''} ${hasPredictive ? 'Predictive language indicates inherent uncertainty.' : ''}`,
       userFeedback: null
     };
   };

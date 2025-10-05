@@ -37,6 +37,9 @@ export function AIOutputCard({
   };
 
   const getConfidenceExplanation = () => {
+    if (output.confidence === "Unknown") {
+      return "Unknown — The backend did not provide a numeric confidence score for this response.";
+    }
     if (viewMode === "educational") {
       if (output.confidence >= 80) {
         return "High confidence - The AI is very certain about this information based on strong evidence.";
