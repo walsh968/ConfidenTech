@@ -17,14 +17,20 @@ export function FilterControls({
   sortOrder, 
   onSortOrderChange 
 }: FilterControlsProps) {
+
+  const sliderId = "confidence-threshold";
   return (
     <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-end">
       {/* Confidence Threshold Filter */}
       <div className="space-y-2 min-w-48">
-        <Label className="text-sm text-primary">
+        <Label className="text-sm text-primary" htmlFor={sliderId}>
           Minimum Confidence: <span className="text-accent font-medium">{confidenceThreshold}%</span>
         </Label>
         <Slider
+          id={sliderId}
+          aria-label="Confidence threshold"
+          aria-valuemin={0}
+          aria-valuemax={100}
           value={[confidenceThreshold]}
           onValueChange={(value) => onThresholdChange(value[0])}
           max={100}
@@ -38,8 +44,8 @@ export function FilterControls({
       <div className="space-y-2 min-w-40">
         <Label className="text-sm text-primary">Sort by Confidence</Label>
         <Select value={sortOrder} onValueChange={onSortOrderChange}>
-          <SelectTrigger className="border-primary/20 focus:border-primary">
-            <SelectValue />
+          <SelectTrigger className="border-primary/20 focus:border-primary" aria-label="Sort order">
+            <SelectValue placeholder="Sort by"/>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="high-to-low">High to Low</SelectItem>

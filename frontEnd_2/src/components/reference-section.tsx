@@ -60,8 +60,10 @@ export function ReferenceSection({
                 </div>
                 
                 {/* Reference Rating Buttons */}
-                <div className="flex gap-1">
+                <div className="flex gap-1" aria-label="Rate this reference">
                   <Button
+                    type="button"
+                    aria-label="Upvote reference"
                     variant="ghost"
                     size="sm"
                     className={cn(
@@ -70,9 +72,11 @@ export function ReferenceSection({
                     )}
                     onClick={() => handleRatingClick(reference.id, "up")}
                   >
-                    <ThumbsUp className="h-3 w-3" />
+                    <ThumbsUp className="h-3 w-3" aria-hidden="true"/>
                   </Button>
                   <Button
+                    type="button"
+                    aria-label="Downvote reference"
                     variant="ghost"
                     size="sm"
                     className={cn(
@@ -81,7 +85,7 @@ export function ReferenceSection({
                     )}
                     onClick={() => handleRatingClick(reference.id, "down")}
                   >
-                    <ThumbsDown className="h-3 w-3" />
+                    <ThumbsDown className="h-3 w-3" aria-hidden="true"/>
                   </Button>
                 </div>
               </div>

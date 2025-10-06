@@ -25,12 +25,13 @@ export function ModeToggle({ viewMode, onModeChange }: ModeToggleProps) {
         <Button 
           variant="outline" 
           className="gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+          aria-label="Change view mode"
         >
           {getModeIcon()}
           {getModeLabel()} Mode
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" aria-label="View mode" role="menu">
         <DropdownMenuItem 
           onClick={() => onModeChange("educational")}
           className="gap-2"
