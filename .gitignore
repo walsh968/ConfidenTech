@@ -6,3 +6,8 @@ build/
 *.log
 .env
 .env.*
+# python venv
+.venv/
+venv/
+env/
+ENV/
