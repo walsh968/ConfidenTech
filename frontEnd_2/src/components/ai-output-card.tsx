@@ -54,6 +54,7 @@ export function AIOutputCard({
     }
   };
 
+  const contentId = React.useId();
   return (
     <Card className="w-full shadow-sm border hover:shadow-md transition-shadow">
       <CardHeader className="pb-4">
@@ -91,7 +92,11 @@ export function AIOutputCard({
             
             {/* Expand/Collapse Button */}
             <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-              <CollapsibleTrigger asChild>
+              <CollapsibleTrigger 
+              asChild
+              aria-label="Show details"
+              aria-controls={contentId}
+              >
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -111,7 +116,11 @@ export function AIOutputCard({
                 </Button>
               </CollapsibleTrigger>
               
-              <CollapsibleContent className="mt-4">
+              <CollapsibleContent 
+              className="mt-4"
+              id={contentId}
+              role="region"
+              >
                 <Separator className="mb-4" />
                 <ReferenceSection
                   references={output.references}

@@ -100,11 +100,13 @@ export function ExportButton({ outputs }: ExportButtonProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button 
+          type="button"
+          aria-label="Export data"
           variant="outline" 
           className="gap-2 border-accent text-accent hover:bg-accent hover:text-accent-foreground" 
           disabled={isExporting || outputs.length === 0}
         >
-          <Download className="h-4 w-4" />
+          <Download className="h-4 w-4" aria-hidden="true"/>
           Export Data
         </Button>
       </DropdownMenuTrigger>
