@@ -60,10 +60,14 @@ export function ConfidenceIndicator({ confidence, viewMode, explanation }: Confi
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex items-center gap-3">
+            <div 
+            className="flex items-center gap-3"
+            role="status"
+            aria-live="polite"
+            >
               {/* Traffic Light Icon */}
               <div className={`p-2 rounded-full border ${info.bgClass}`}>
-                <CircleDot className={`h-5 w-5 ${info.dotClass}`} />
+                <CircleDot className={`h-5 w-5 ${info.dotClass}`} aria-hidden="true" focusable="false"/>
               </div>
 
               {/* Confidence Badge */}
@@ -94,16 +98,16 @@ export function ConfidenceIndicator({ confidence, viewMode, explanation }: Confi
       </TooltipProvider>
     );
   }
-
+  const descId = React.useId();
   // Critical mode
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex items-center gap-3 min-w-fit">
+          <div className="flex items-center gap-3 min-w-fit" aria-describedby={descId}>
             {/* Traffic Light Icon */}
             <div className={`p-1.5 rounded-full border ${info.bgClass}`}>
-              <CircleDot className={`h-4 w-4 ${info.dotClass}`} />
+              <CircleDot className={`h-4 w-4 ${info.dotClass}`} aria-hidden="true" focusable="false"/>
             </div>
 
             {/* Progress + Percentage */}
@@ -112,6 +116,9 @@ export function ConfidenceIndicator({ confidence, viewMode, explanation }: Confi
                 <div className="bg-primary/20 relative h-2 w-full overflow-hidden rounded-full">
                   {info.numeric !== undefined && (
                     <div
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label="Confidence"
                       className={`h-full transition-all ${info.barClass}`}
                       style={{ width: `${info.numeric}%` }}
                     />
