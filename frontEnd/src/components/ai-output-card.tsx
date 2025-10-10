@@ -19,20 +19,23 @@ interface AIOutputCardProps {
   onReferenceRating: (outputId: string, referenceId: string, rating: "up" | "down" | null) => void;
 }
 
-export function AIOutputCard({ 
-  output, 
-  viewMode, 
-  onFeedbackChange, 
-  onReferenceRating 
+export function AIOutputCard({
+  output,
+  viewMode,
+  onFeedbackChange,
+  onReferenceRating,
 }: AIOutputCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
+  const question = output.question ?? "Ask a Question?";
+  const answer = output.text ?? output.text;
+
   const formatTimestamp = (timestamp: string) => {
     return new Date(timestamp).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
     });
   };
 
@@ -79,61 +82,54 @@ export function AIOutputCard({
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* AI Output Text */}
-        <div className="space-y-3">
-          <p className="leading-relaxed">{output.text}</p>
-          
-          {/* Feedback Widget */}
-          <div className="flex items-center justify-between">
-            <FeedbackWidget
-              feedback={output.userFeedback}
-              onFeedbackChange={(feedback) => onFeedbackChange(output.id, feedback)}
-            />
-            
-            {/* Expand/Collapse Button */}
-            <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-              <CollapsibleTrigger 
-              asChild
-              aria-label="Show details"
-              aria-controls={contentId}
-              >
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="gap-1 hover:bg-accent/10 hover:text-accent"
-                >
-                  {isExpanded ? (
-                    <>
-                      <ChevronUp className="h-4 w-4" />
-                      Hide Details
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="h-4 w-4" />
-                      Show References
-                    </>
-                  )}
-                </Button>
-              </CollapsibleTrigger>
-              
-              <CollapsibleContent 
-              className="mt-4"
-              id={contentId}
-              role="region"
-              >
-                <Separator className="mb-4" />
-                <ReferenceSection
-                  references={output.references}
-                  comparisonSummary={output.comparisonSummary}
-                  onReferenceRating={(referenceId, rating) => 
-                    onReferenceRating(output.id, referenceId, rating)
-                  }
-                />
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-        </div>
-      </CardContent>
+  <div className="space-y-3">
+    {/* Question */}
+    <div>
+      <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Question</div>
+      <p className="leading-relaxed font-medium">{question}</p>
+    </div>
+
+    {/* Answer */}
+    <div>
+      <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Answer</div>
+      <p className="leading-relaxed">{answer}</p>
+    </div>
+
+    <div className="flex items-center justify-between">
+      <FeedbackWidget
+        feedback={output.userFeedback}
+        onFeedbackChange={(feedback) => onFeedbackChange(output.id, feedback)}
+      />
+
+      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+        <CollapsibleTrigger asChild aria-label="Show details" aria-controls={contentId}>
+          <Button variant="ghost" size="sm" className="gap-1 hover:bg-accent/10 hover:text-accent">
+            {isExpanded ? (
+              <>
+                <ChevronUp className="h-4 w-4" />
+                Hide Details
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4" />
+                Show References
+              </>
+            )}
+          </Button>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent className="mt-4" id={contentId} role="region">
+          <Separator className="mb-4" />
+          <ReferenceSection
+            references={output.references}
+            comparisonSummary={output.comparisonSummary}
+            onReferenceRating={(referenceId, rating) => onReferenceRating(output.id, referenceId, rating)}
+          />
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  </div>
+</CardContent>
     </Card>
   );
 }

@@ -35,7 +35,7 @@ export function InputAnalysis({ onAnalyze, isAnalyzing }: InputAnalysisProps) {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary" />
-            <Label className="text-primary">AI Output Analysis</Label>
+            <Label className="text-primary">ConfidenTech AI Assistant</Label>
           </div>
           
           <div className="space-y-3">
@@ -43,14 +43,14 @@ export function InputAnalysis({ onAnalyze, isAnalyzing }: InputAnalysisProps) {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Paste AI output here for analysis… (Ctrl+Enter to analyze)"
+              placeholder="Ask anything — get an answer with confidence and references."
               className="min-h-32 resize-none border-primary/20 focus:border-primary"
               disabled={isAnalyzing}
             />
             
             <div className="flex justify-between items-center">
               <p className="text-sm text-muted-foreground">
-                Enter AI-generated text to analyze confidence levels and generate reference data
+              Ask a question to receive an AI-generated answer with confidence analysis and reference data.
               </p>
               
               <Button

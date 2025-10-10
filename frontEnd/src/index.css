@@ -114,6 +114,11 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
   body {
     line-height: inherit;
   }
@@ -1978,6 +1983,7 @@
 }
 
 :root {
+  --input-bar-height: 200px;
   --font-size: 16px;
   --background: #fafaf5;
   --foreground: #2d3748;
@@ -2273,4 +2279,40 @@ html {
     opacity: var(--tw-exit-opacity, 1);
     transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0) scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1)) rotate(var(--tw-exit-rotate, 0));
   }
+}
+
+.fixed-input-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background-color: var(--background);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05); 
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.app-main {
+  padding-bottom: calc(var(--input-bar-height, 88px) + 16px + env(safe-area-inset-bottom));
+}
+å
+.fixed-input-bar .container {
+  padding-top: 0.5rem;   
+  padding-bottom: 0.5rem;
+}
+
+.fixed-input-bar textarea,
+.fixed-input-bar input[type="text"] {
+  min-height: 2.25rem;         
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  font-size: 0.95rem;          
+  line-height: 1.4;
+}
+
+.fixed-input-bar button {
+  padding-block: 0.25rem;  
+  font-size: 0.9rem;
 }

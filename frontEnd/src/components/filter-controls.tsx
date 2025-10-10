@@ -3,12 +3,13 @@ import { Slider } from "./ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import React from "react";
 
+type SortOrder = "time" | "high-to-low" | "low-to-high";
 
 interface FilterControlsProps {
   confidenceThreshold: number;
   onThresholdChange: (threshold: number) => void;
-  sortOrder: "high-to-low" | "low-to-high";
-  onSortOrderChange: (order: "high-to-low" | "low-to-high") => void;
+  sortOrder: SortOrder;
+  onSortOrderChange: (order: SortOrder) => void;
 }
 
 export function FilterControls({ 
@@ -21,7 +22,7 @@ export function FilterControls({
   const sliderId = "confidence-threshold";
   return (
     <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-end">
-      {/* Confidence Threshold Filter */}
+      {/* Minimum Confidence */}
       <div className="space-y-2 min-w-48">
         <Label className="text-sm text-primary" htmlFor={sliderId}>
           Minimum Confidence: <span className="text-accent font-medium">{confidenceThreshold}%</span>
@@ -40,14 +41,15 @@ export function FilterControls({
         />
       </div>
 
-      {/* Sort Order */}
+      {/* Sort */}
       <div className="space-y-2 min-w-40">
-        <Label className="text-sm text-primary">Sort by Confidence</Label>
-        <Select value={sortOrder} onValueChange={onSortOrderChange}>
+        <Label className="text-sm text-primary">Sort</Label>
+        <Select value={sortOrder} onValueChange={(v) => onSortOrderChange(v as SortOrder)}>
           <SelectTrigger className="border-primary/20 focus:border-primary" aria-label="Sort order">
             <SelectValue placeholder="Sort by"/>
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="time">Time</SelectItem>
             <SelectItem value="high-to-low">High to Low</SelectItem>
             <SelectItem value="low-to-high">Low to High</SelectItem>
           </SelectContent>
