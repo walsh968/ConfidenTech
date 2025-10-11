@@ -243,3 +243,25 @@ def user_login_history(request):
         'page_size': page_size,
         'total_pages': (total_count + page_size - 1) // page_size
     }, status=status.HTTP_200_OK)
+
+
+from llm.service import confidence_and_answer
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def get_confidence_score(request):
+    """
+    Take in a prompt from the front end, and retrieve and AI output and confidence score
+    """
+    prompt = request.data.get('text', '')
+
+    if not prompt:
+        return Response({'error': 'Prompt is empty'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    score, response = confidence_and_answer(prompt)
+
+    # Set up log to MongoDB here
+
+    return Response({
+        'score': score,
+        'response': response
+    }, status=status.HTTP_200_OK)
