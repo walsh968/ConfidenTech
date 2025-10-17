@@ -6,6 +6,11 @@ build/
 *.log
 .env
 .env.*
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.vscode/
 # python venv
 .venv/
 venv/

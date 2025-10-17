@@ -16,7 +16,5 @@ urlpatterns = [
     path('check-email/', views.check_email_exists, name='check-email'),
     path('dashboard/', views.user_dashboard, name='user-dashboard'),
     path('login-history/', views.user_login_history, name='login-history'),
-
-    # Confidence score endpoint
-    path("api/confidence/", views.get_confidence_score, name="confidence")
+ 
 ]

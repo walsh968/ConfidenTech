@@ -153,9 +153,9 @@ def confidence_and_answer(
     model_b: str = MODEL_B,
     embed_model: str = EMBED_MODEL,
     weight_agreement: float = 0.6,
-) -> tuple[int, str]:
+) -> dict:
     """
-    Returns (confidence_score, best_answer).
+    Returns a dictionary.
     """
     initial: State = {
         "prompt": prompt,
@@ -165,8 +165,7 @@ def confidence_and_answer(
         "weight_agreement": weight_agreement,
     }
     out = app.invoke(initial)
-    if out.get("best_model") == model_b:
-        return int(out.get("b_conf_pct", 0)), out.get("b_answer", "")
-    return int(out.get("a_conf_pct", 0)), out.get("a_answer", "")
+    
+    return out
 
 

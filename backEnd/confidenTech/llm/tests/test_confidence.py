@@ -28,28 +28,34 @@ class ConfidenceCalculationTests(TestCase):
         # Should safely return 0 instead of a DivisionByZeroError
         self.assertEqual(_cos(a, b), 0.0)
 
-    @patch("llm.service._ollama_generate")
-    @patch("llm.service._embed")
-    def test_confidence_and_answer(self, mock_embed, mock_generate):
+
+    @patch("llm.service.app.invoke")
+    def test_confidence_and_answer(self, mock_invoke):
         """
         Test the main confidence_and_answer without real HTTP calls
         """
         # --- Mock the two models' text outputs ---
-        mock_generate.side_effect = [
-            ("Answer A", 0.8),      # model A
-            ("Answer B", 0.7),      # model B
-        ]
+        mock_invoke.return_value = {
+            "prompt": "Who is the president of the United States?",
+            "model_a": "Answer A",
+            "model_b": "Answer B",
+            "best_model": "A",
+            "best_answer": "Answer A",
+            "a_conf_pct": 96,
+            "b_conf_pct": 88
+        }        
+        
 
-        # --- Mock embeddings to have strong similarity ---
-        mock_embed.side_effect = [
-            np.array([1, 2, 3], dtype=float),
-            np.array([1, 2.1, 3], dtype=float),
-        ]
+        result = confidence_and_answer("Who is the president of the United States?")
 
-        conf, answer = confidence_and_answer("What is AI?")         # conf = confidence
-        self.assertIsInstance(conf, int)
-        self.assertTrue(0 <= conf <= 100)
-        self.assertIn(answer, ["Answer A", "Answer B"])
+        self.assertEqual(result["prompt"], "Who is the president of the United States?")
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result["model_a"], "Answer A")
+        self.assertEqual(result["model_b"], "Answer B")
+        self.assertEqual(result["best_model"], "A")
+        self.assertEqual(result["best_answer"], "Answer A")
+        self.assertEqual(result["a_conf_pct"], 96)
+        self.assertEqual(result["b_conf_pct"], 88)
 
 # Strong Aggreement Path Test
     @patch("llm.service._embed")
