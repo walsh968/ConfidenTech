@@ -87,7 +87,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         
         # Sync to MongoDB
-        self._sync_to_mongodb(user)
+        # self._sync_to_mongodb(user)
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
@@ -172,10 +172,10 @@ class User(AbstractUser):
         """Override save to sync with MongoDB"""
         super().save(*args, **kwargs)
         # Sync to MongoDB after saving
-        try:
-            self._sync_to_mongodb()
-        except Exception as e:
-            print(f"Error syncing user to MongoDB: {e}")
+        # try:
+        #     self._sync_to_mongodb()
+        # except Exception as e:
+        #     print(f"Error syncing user to MongoDB: {e}")
     
     def _sync_to_mongodb(self):
         """Sync this user instance to MongoDB"""
