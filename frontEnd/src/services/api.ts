@@ -40,8 +40,9 @@ export const loginUser = async (credentials: LoginCredentials): Promise<ApiRespo
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json', // Add this
       },
-      credentials: 'include', // Important for session cookies
+      credentials: 'include',
       body: JSON.stringify(credentials),
     });
 
@@ -60,38 +61,14 @@ export const loginUser = async (credentials: LoginCredentials): Promise<ApiRespo
   }
 };
 
-// Register user
-export const registerUser = async (userData: RegisterData): Promise<ApiResponse<{ user: User; message: string }>> => {
+// Get user profile
+export const getUserProfile = async (): Promise<ApiResponse<{ user: User }>> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/register/`, {
-      method: 'POST',
+    const response = await fetch(`${API_BASE_URL}/profile/`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
+        'Accept': 'application/json', // Add this
       },
-      credentials: 'include',
-      body: JSON.stringify(userData),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      return { success: true, data };
-    } else {
-      return { success: false, errors: data };
-    }
-  } catch (error) {
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Network error' 
-    };
-  }
-};
-
-// Logout user
-export const logoutUser = async (): Promise<ApiResponse<{ message: string }>> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/logout/`, {
-      method: 'POST',
       credentials: 'include',
     });
 
@@ -105,11 +82,44 @@ export const logoutUser = async (): Promise<ApiResponse<{ message: string }>> =>
   }
 };
 
-// Get user profile
-export const getUserProfile = async (): Promise<ApiResponse<{ user: User }>> => {
+// Register user
+// Register user
+export const registerUser = async (userData: RegisterData): Promise<ApiResponse<{ user: User; message: string }>> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/profile/`, {
-      method: 'GET',
+    console.log('Sending registration request:', userData);
+    const response = await fetch(`${API_BASE_URL}/register/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json', // Add this line
+      },
+      credentials: 'include',
+      body: JSON.stringify(userData),
+    });
+
+    console.log('Registration response status:', response.status);
+    const data = await response.json();
+    console.log('Registration response data:', data);
+
+    if (response.ok) {
+      return { success: true, data };
+    } else {
+      return { success: false, errors: data };
+    }
+  } catch (error) {
+    console.error('Registration network error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Network error' 
+    };
+  }
+};
+
+// Logout user
+export const logoutUser = async (): Promise<ApiResponse<{ message: string }>> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/logout/`, {
+      method: 'POST',
       credentials: 'include',
     });
 

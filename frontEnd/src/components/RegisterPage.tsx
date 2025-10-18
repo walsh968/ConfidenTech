@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { registerUser } from '../services/api';
+import { useAuth } from '../contexts/AuthContext'; // Import useAuth hook
 
 export function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ export function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login } = useAuth(); 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -31,12 +33,25 @@ export function RegisterPage() {
     setError('');
     
     try {
+      console.log('Attempting registration with:', formData);
       const result = await registerUser(formData);
+      console.log('Registration result:', result);
       
       if (result.success) {
-        // Navigate to dashboard on successful registration
-        navigate('/');
+        console.log('Registration successful, attempting auto-login');
+        // Auto-login after successful registration
+        const loginResult = await login(formData.email, formData.password);
+        console.log('Login result:', loginResult);
+        
+        if (loginResult.success) {
+          navigate('/');
+        } else {
+          // If auto-login fails, redirect to login page
+          setError('Registration successful! Please log in.');
+          setTimeout(() => navigate('/login'), 2000);
+        }
       } else {
+        console.log('Registration failed:', result);
         setError(result.errors?.email?.[0] || 
                 result.errors?.password?.[0] || 
                 result.errors?.non_field_errors?.[0] ||

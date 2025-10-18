@@ -134,7 +134,7 @@ AUTH_USER_MODEL = 'users.User'
 
 # MongoDB Configuration
 MONGODB_SETTINGS = {
-    'host': 'mongodb+srv://munavarh:Seattle%4000786@main-cluster.hvznv1t.mongodb.net/?retryWrites=true&w=majority&appName=Main-Cluster',
+    'host': 'mongodb://localhost:27017',
     'db': 'confidenTech',
 }
 
