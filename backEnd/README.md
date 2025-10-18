@@ -17,21 +17,33 @@ Django REST API with MongoDB integration for user authentication and management.
 ### 1. Install Dependencies
 
 ```bash
+cd backEnd
 pip install -r requirements.txt
 ```
 
-### 2. Environment Setup
+### 2. Install MongoDB using Homebrew
 
-Create a `.env` file in the project root:
 
-```env
-SECRET_KEY=your-secret-key-here
-DEBUG=True
-MONGODB_HOST=mongodb+srv://munavarh:Seattle@00786@main-cluster.hvznv1t.mongodb.net/?retryWrites=true&w=majority&appName=Main-Cluster
-MONGODB_DB=confidenTech
+```
+brew install mongodb-community
 ```
 
-### 3. Database Setup
+### 3. Start MongoDB
+
+```
+brew services start mongodb-community
+```
+
+### 4. Replace the MongoDB settings in settings.py
+
+```
+MONGODB_SETTINGS = {
+    'host': 'mongodb://localhost:27017',
+    'db': 'confidenTech',
+}
+```
+
+### 5. Database Setup
 
 ```bash
 # Run migrations
@@ -42,13 +54,13 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-### 4. Test MongoDB Connection
+### 6. Test MongoDB Connection
 
 ```bash
 python manage.py test_mongodb
 ```
 
-### 5. Run Development Server
+### 7. Run Development Server
 
 ```bash
 python manage.py runserver
