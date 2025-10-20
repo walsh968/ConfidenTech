@@ -10,8 +10,8 @@ GEN = urljoin(OLLAMA_HOST + "/", "api/generate")
 EMB = urljoin(OLLAMA_HOST + "/", "api/embeddings")
 
 # Use your locally available Gemma models
-MODEL_A = "gemma3:latest"
-MODEL_B = "gemma3:4b"
+MODEL_A = "gemma2:2b"
+MODEL_B = "gemma2:2b"
 # Pick a small embedding model if you have one (pull one if missing)
 EMBED_MODEL = "nomic-embed-text"
 

@@ -3,7 +3,7 @@ from . import views
 
 urlpatterns = [
     # Confidence score endpoint
-    path("api/confidence/", views.get_confidence_score, name="confidence"),
+    path("confidence/", views.get_confidence_score, name="confidence"),
     
     # Add other AI-related URLs
 ]
