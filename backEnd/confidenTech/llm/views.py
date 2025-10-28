@@ -1,11 +1,11 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .models import AIResponseLog
 from .service import confidence_and_answer
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def get_confidence_score(request):
     """
     Take in a prompt from the front end, and retrieve and AI output and confidence score
