@@ -42,3 +42,31 @@ def form_answer(question):
     )
 
     return response.choices[0].message.content
+
+'''
+This method takes in a user's prompt, the LLM answer to that prompt,
+and the scraped textual content of a related website then summarizes
+relevant parts for fact checking purposes
+'''
+def summarize_web_page(prompt, answer, webContent):
+    # Give directions to GPT
+    basePrompt = "You are a helpful assistant that summarizes webpage content relevant to fact checking" \
+    " the question and answer provided by the user. Keep response under 200 words."
+
+    # Trim webpage content
+    if len(webContent) > 5000:
+        webContent = webContent[:5000]
+
+    # Form user prompt for GPT
+    userPrompt = f"User's question: {prompt}\n" \
+    f"LLM's response: {answer}\n" \
+    f"Webpage content: {webContent}"
+
+    response = client.chat.completions.create(
+        model='llama-3.3-70b-versatile',
+        messages=[{"role": "system", "content": basePrompt},
+                  {"role": "user", "content": userPrompt}],
+        temperature = 0.7
+    )
+
+    return response.choices[0].message.content

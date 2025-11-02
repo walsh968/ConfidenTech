@@ -47,4 +47,20 @@ def get_confidence_score(request):
         }, status=status.HTTP_200_OK)
 
     return Response({'message': 'Success'}, status=status.HTTP_200_OK)
+
+from llm.service import confidence_and_answer
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def get_confidence_score_and_answer(request):
+    '''
+    Take in user input and feed it to the confidence algorithm to get the confidence score
+    '''
+    text = request.data.get('text')
+
+    score, answer = confidence_and_answer(text)
+
+    return Response({
+        'score': score,
+        'answer': answer
+    }, status=status.HTTP_200_OK)
     

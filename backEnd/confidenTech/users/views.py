@@ -244,5 +244,96 @@ def user_login_history(request):
         'total_pages': (total_count + page_size - 1) // page_size
     }, status=status.HTTP_200_OK)
 
+from llm.service import confidence_and_answer
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def get_confidence_score(request):
+    '''
+    Take in user input and feed it to the confidence algorithm to get the confidence score
+    '''
+    text = request.data.get('text')
+
+    score, answer = confidence_and_answer(text)
+
+    return Response({
+        'score': score,
+        'answer': answer
+    }, status=status.HTTP_200_OK)
+
+
+
+from googleapiclient.discovery import build
+
+API_KEY = 'AIzaSyCMizf1CsepV8Psf6pnU3hy0FZXQTAXZFA'
+CSE_ID = '86970aef48dab4539'
+
+
+'''
+Method which utilizes the Google Custom Search API to take a query and retrieve the top
+    resulting website titles and links to them
+@param query is the query to search the web with
+@returns a list of tuples where the first element is the website title, the second is
+    the website link, and the third is a site description
+'''
+def get_sites(query):
+    # Instantiate list of websites to be returned from query
+    listOfSites = []
+
+    # Build custom serach service and retrieve top 10 website titles and links
+    service = build("customsearch", "v1", developerKey=API_KEY)
+    titlesAndLinks = service.cse().list(q=query, cx=CSE_ID).execute()
+
+    # Append top 5 websites to listOfSites and return them
+    for item in titlesAndLinks.get('items', []):
+        listOfSites.append((item['title'], item['link'], item['snippet']))
+    
+    print(f'list of sites: {listOfSites}')
+    print("Full API response:", titlesAndLinks)
+
+    # Return list of tuples
+    return listOfSites
+
+from webSearch import get_text_content
+from LLMInteraction import form_query, summarize_web_page
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def get_links_and_summaries(request):
+    '''
+    Take in user input and feed it to the confidence algorithm to get the confidence score
+    '''
+    prompt = request.data.get('prompt')
+    answer = request.data.get('answer')
+
+    query = form_query(prompt, answer)
+    query = query.strip('"')
+    print(f'query: {query}')
+
+    # Get website (title, link, snippet)
+    listOfSites = get_sites(query)
+
+    # Extract titles and links
+    titles = []
+    links = []
+    i = 0
+    for item in listOfSites:
+        if i > 4:
+            break
+        titles.append(item[0])
+        links.append(item[1])
+        i += 1
+    print(f'links: {links}')
+    
+    #text = get_text_content(links[0])
+
+    #summary = summarize_web_page(prompt, answer, text)
+    #print(titles[0], links[0], summary)
+
+    return Response({
+        'title': titles,
+        'link': links,
+    }, status=status.HTTP_200_OK)
+
+
+
 
 

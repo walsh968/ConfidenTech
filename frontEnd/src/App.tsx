@@ -268,8 +268,41 @@ function Dashboard() {
 
   const handleAnalyze = async (inputText: string) => {
     setIsAnalyzing(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    const analysisResult = generateAnalysis(inputText);
+
+    // Implement actual API call
+    const response = await fetch("http://127.0.0.1:8000/api/users/analyze/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({
+        text: inputText,
+      }),
+    });
+
+    const data = await response.json();
+    console.log("Confidence Score: ", data.score);
+    console.log("Answer: ", data.answer);
+
+    const response2 = await fetch("http://127.0.0.1:8000/api/users/sites/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: inputText,
+        answer: data.answer,
+      }),
+    });
+
+    const data2 = await response2.json();
+    console.log("link: ", data2.link)
+
+
+    //await new Promise((resolve) => setTimeout(resolve, 2000));
+    const analysisResult = generateAnalysis(inputText, data.answer, data.score);
     setOutputs((prev) => [...prev, analysisResult]);
     setIsAnalyzing(false);
   };
@@ -302,7 +335,7 @@ function Dashboard() {
     );
   };
 
-  const generateAnalysis = (text: string): AIOutput => {
+  const generateAnalysis = (question: string, text: string, score: number): AIOutput => {
     const textLength = text.length;
     const hasNumbers = /\d/.test(text);
     const hasScientificTerms = /\b(study|research|evidence|data|analysis|according to)\b/i.test(text);
@@ -323,28 +356,30 @@ function Dashboard() {
       category = "General Analysis";
     }
 
-    const isUnknown = Math.random() < 0.25;
-    const confidence: Confidence = isUnknown
-      ? "Unknown"
-      : (() => {
-          if (hasScientificTerms && hasNumbers && textLength > 100)
-            return Math.floor(75 + Math.random() * 20); // 75-95
-          if (hasPredictive || textLength < 50) return Math.floor(30 + Math.random() * 25); // 30-55
-          return Math.floor(55 + Math.random() * 25); // 55-80
-        })();
+    // const isUnknown = Math.random() < 0.25;
+    // const confidence: Confidence = isUnknown
+    //   ? "Unknown"
+    //   : (() => {
+    //       if (hasScientificTerms && hasNumbers && textLength > 100)
+    //         return Math.floor(75 + Math.random() * 20); // 75-95
+    //       if (hasPredictive || textLength < 50) return Math.floor(30 + Math.random() * 25); // 30-55
+    //       return Math.floor(55 + Math.random() * 25); // 55-80
+    //     })();
 
     const newId = `analysis-${Date.now()}`;
-    const mockAnswer =
-      confidence === "Unknown"
-        ? "(Mock) Unable to provide a clear confidence level at the moment. Based on your question, I’ll offer a cautious suggestion derived from available references and pattern insights."
-        : `(Mock) Based on your question, my brief answer is: this is a ${
-            (confidence as number) >= 70 ? "fairly confident" : (confidence as number) >= 50 ? "somewhat supported" : "uncertain"
-          } conclusion. Please review the reference data for further verification.`;
+    // const mockAnswer =
+    //   confidence === "Unknown"
+    //     ? "(Mock) Unable to provide a clear confidence level at the moment. Based on your question, I’ll offer a cautious suggestion derived from available references and pattern insights."
+    //     : `(Mock) Based on your question, my brief answer is: this is a ${
+    //         (confidence as number) >= 70 ? "fairly confident" : (confidence as number) >= 50 ? "somewhat supported" : "uncertain"
+    //       } conclusion. Please review the reference data for further verification.`;
+
+    let confidence = score
 
     return {
       id: newId,
-      question: text,
-      text: mockAnswer,
+      question: question,
+      text: text,
       confidence,
       timestamp: new Date().toISOString(),
       category,
@@ -442,9 +477,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  //if (!isAuthenticated) {
+  //  return <Navigate to="/login" replace />;
+  //}
 
   return <>{children}</>;
 }

@@ -10,8 +10,8 @@ GEN = urljoin(OLLAMA_HOST + "/", "api/generate")
 EMB = urljoin(OLLAMA_HOST + "/", "api/embeddings")
 
 # Use your locally available Gemma models
-MODEL_A = "gemma2:2b"
-MODEL_B = "gemma2:2b"
+MODEL_A = "gemma3:4b"
+MODEL_B = "gemma3:4b"
 # Pick a small embedding model if you have one (pull one if missing)
 EMBED_MODEL = "nomic-embed-text"
 
@@ -165,7 +165,9 @@ def confidence_and_answer(
         "weight_agreement": weight_agreement,
     }
     out = app.invoke(initial)
-    
-    return out
+    if out.get("best_model") == model_b:
+        return int(out.get("b_conf_pct", 0)), out.get("b_answer", "")
+    return int(out.get("a_conf_pct", 0)), out.get("a_answer", "")
+    #return out
 
 
