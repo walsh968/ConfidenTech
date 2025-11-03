@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import AIResponseLog
+from .models import AIResponseLog, ExportAuditLog
 
 # Register your models here.
 @admin.register(AIResponseLog)
@@ -32,3 +32,9 @@ class AIResponseLogAdmin(admin.ModelAdmin):
             'fields': ('best_answer',)
         }),
     )
+
+@admin.register(ExportAuditLog)
+class ExportAuditLogAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "user", "endpoint", "dataset", "file_format", "status", "ip")
+    list_filter = ("dataset", "file_format", "status", "created_at")
+    search_fields = ("user__username", "endpoint", "dataset", "filename")
