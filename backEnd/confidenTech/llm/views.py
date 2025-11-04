@@ -63,19 +63,8 @@ def get_confidence_score(request):
         status=status.HTTP_200_OK
     )
 
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def get_raw_outputs(request):
-
-    prompt = _get_prompt_from_request(request, allow_get_query=True)
-    if not prompt:
-        return Response({'error': 'Prompt is empty'}, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        result = confidence_and_answer(prompt)
-    except Exception as e:
-        return Response({'detail': f'backend error: {e}'}, status=status.HTTP_502_BAD_GATEWAY)
+def _generate_raw_payload(prompt: str) -> dict:
+    result = confidence_and_answer(prompt)
 
     model_a = result.get("model_a")
     model_b = result.get("model_b")
@@ -142,102 +131,16 @@ def get_raw_outputs(request):
     if "note" in raw_block:
         payload["note"] = raw_block["note"]
 
-    return Response(payload, status=status.HTTP_200_OK)
+    return payload
 
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])   
-def export_raw_outputs(request):
-
-    if request.method == 'GET':
-        prompt = (request.GET.get('text') or "").strip()
-        fmt = (request.GET.get('export_format') or "json").lower()
-    else:
-        data = request.data if hasattr(request, "data") and isinstance(request.data, dict) else {}
-        prompt = (data.get('text') or request.query_params.get('text') or "").strip()
-        fmt = (data.get('export_format') or data.get('format')
-               or request.query_params.get('export_format')
-               or request.query_params.get('format') or "json").lower()
-
-    if not prompt:
-        return Response({
-            "detail": "Provide prompt via POST {'text': '...','format':'csv|json'} "
-                      "or GET ?text=...&export_format=csv|json"
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    if fmt not in ("json", "csv"):
-        return Response({"detail": "export_format/format must be 'json' or 'csv'."},
-                        status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        result = confidence_and_answer(prompt)
-    except Exception as e:
-        return Response({'detail': f'backend error: {e}'}, status=status.HTTP_502_BAD_GATEWAY)
-
-    model_a = result.get("model_a")
-    model_b = result.get("model_b")
-    a_conf_pct = int(result.get("a_conf_pct", 0))
-    b_conf_pct = int(result.get("b_conf_pct", 0))
-    best_model = result.get("best_model") or model_a
-    best_answer = result.get("best_answer", "")
-    final_conf_pct = a_conf_pct if best_model == model_a else b_conf_pct
-
-    raw_block = build_raw_payload(
-        prompt=prompt,
-        chosen_model=best_model,
-        final_confidence_pct=final_conf_pct,
-        want_tokens=True,
-        topk=5,
-        max_tokens=256,
-    )
-
-    qs = AIResponseLog.objects.order_by("-timestamp").values_list("final_confidence", flat=True)[:200]
-    vals = list(qs)
-    n = len(vals)
-    buckets = {"0-49": 0, "50-74": 0, "75-100": 0}
-    for v in vals:
-        if v < 50: buckets["0-49"] += 1
-        elif v < 75: buckets["50-74"] += 1
-        else: buckets["75-100"] += 1
-    avg = round(sum(vals) / n, 2) if n else None
-
-    payload = {
-        "prompt": prompt,
-        "chosen_model": raw_block["model"],
-        "overall": {
-            "final_confidence_pct": final_conf_pct,
-            "best_answer": best_answer,
-            "agreement_pct": int(result.get("agreement_pct", 0)),
-            "a_conf_pct": a_conf_pct,
-            "b_conf_pct": b_conf_pct,
-        },
-        "per_token": raw_block.get("per_token", []),
-        "binary_probs": raw_block["binary_probs"],
-        "calibration": {
-            "sample_size": n,
-            "mean_final_confidence": avg,
-            "bucket_counts": buckets
-        }
-    }
-    if "note" in raw_block:
-        payload["note"] = raw_block["note"]
-
-    AIResponseLog.objects.create(
-        input_query=prompt,
-        model_a=model_a,
-        model_b=model_b,
-        embed_model=result.get("embed_model"),
-        model_a_confidence=result.get("a_self"),
-        model_b_confidence=result.get("b_self"),
-        agreement_score=result.get("agreement"),
-        final_confidence=final_conf_pct,
-        best_model=best_model,
-        best_answer=best_answer
-    )
-
+def _format_export_response(payload: dict, fmt: str) -> HttpResponse:
+    """
+    This is the "formatter." It takes a payload and returns
+    either a JSON Response or a CSV HttpResponse.
+    """
     if fmt == "json":
         return Response(payload, status=status.HTTP_200_OK)
-
+    
     buf = io.StringIO()
     buf.write('\ufeff')
     writer = csv.writer(buf)
@@ -286,6 +189,56 @@ def export_raw_outputs(request):
     resp['Content-Disposition'] = f'attachment; filename="{fname}"'
     return resp
 
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def get_raw_outputs(request):
+
+    prompt = _get_prompt_from_request(request, allow_get_query=True)
+    if not prompt:
+        return Response({'error': 'Prompt is empty'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        payload = _generate_raw_payload(prompt)
+    except Exception as e:
+        return Response({'detail': f'backend error: {e}'}, status=status.HTTP_502_BAD_GATEWAY)
+
+    return Response(payload, status=status.HTTP_200_OK)     # Return as JSON
+    
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])   
+def export_raw_outputs(request):
+
+    if request.method == 'GET':
+        prompt = (request.GET.get('text') or "").strip()
+        fmt = (request.GET.get('export_format') or "json").lower()
+    else:
+        data = request.data if hasattr(request, "data") and isinstance(request.data, dict) else {}
+        prompt = (data.get('text') or request.query_params.get('text') or "").strip()
+        fmt = (data.get('export_format') or data.get('format')
+               or request.query_params.get('export_format')
+               or request.query_params.get('format') or "json").lower()
+
+    if not prompt:
+        return Response({
+            "detail": "Provide prompt via POST {'text': '...','format':'csv|json'} "
+                      "or GET ?text=...&export_format=csv|json"
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    if fmt not in ("json", "csv"):
+        return Response({"detail": "export_format/format must be 'json' or 'csv'."},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # Call payload helper
+        payload = _generate_raw_payload(prompt)
+    except Exception as e:
+        return Response({'detail': f'backend error: {e}'}, status=status.HTTP_502_BAD_GATEWAY)
+
+    # Call format helper
+    return _format_export_response(payload, fmt)
+        
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -310,10 +263,11 @@ def export_confidence_data(request):
     if fmt not in ("csv", "json"):
         return Response({"detail": "format must be 'csv' or 'json'."}, status=status.HTTP_400_BAD_REQUEST)
 
-    class DummyReq:
-        method = "POST"
-        def __init__(self, text, fmt):
-            self.data = {"text": text, "format": fmt}
-            self.query_params = {}
-    dummy = DummyReq(text, fmt)
-    return export_raw_outputs(dummy)
+    try:
+        # Call payload helper
+        payload = _generate_raw_payload(text)       # 'text' is the prompt
+    except Exception as e:
+        return Response({'detail': f'backend error: {e}'}, status=status.HTTP_502_BAD_GATEWAY)
+    
+    # Call format helper
+    return _format_export_response(payload, fmt)
