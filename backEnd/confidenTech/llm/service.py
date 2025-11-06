@@ -72,6 +72,107 @@ def _embed(text: str, model: str) -> np.ndarray:
         raise RuntimeError("Invalid embedding response from Ollama.")
     return np.array(vec, dtype=float)
 
+def _gen_with_logprobs(prompt: str, model: str, *, max_tokens: int = 256, topk: int = 5):
+
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "stream": True,  
+        "options": {
+            "temperature": 0.0,
+            "num_predict": max_tokens,
+            "logprobs": topk,  
+        },
+    }
+
+    try:
+        r = requests.post(GEN, json=payload, stream=True, timeout=180)
+        r.raise_for_status()
+    except Exception as e:
+        return {"text": "", "per_token": [], "error": str(e)}
+
+    full_text = []
+    tokens = []
+
+    for line in r.iter_lines(decode_unicode=True):
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except Exception:
+            continue
+
+        piece = obj.get("response") or obj.get("content") or ""
+        if piece:
+            full_text.append(piece)
+
+        lp = obj.get("logprobs") or obj.get("log_probs") or None
+        if isinstance(lp, dict):
+            tok = lp.get("token")
+            logp = lp.get("logprob")
+            topk_items = []
+            if isinstance(lp.get("top_logprobs"), list):
+                for cand in lp["top_logprobs"]:
+                    ctok = cand.get("token")
+                    clogp = cand.get("logprob")
+                    if ctok is None or clogp is None:
+                        continue
+                    topk_items.append({
+                        "token": ctok,
+                        "logprob": clogp,
+                        "prob": math.exp(clogp) if isinstance(clogp, (int, float)) else None
+                    })
+            tokens.append({
+                "token": tok,
+                "logprob": logp,
+                "prob": math.exp(logp) if isinstance(logp, (int, float)) else None,
+                "topk": topk_items
+            })
+
+    return {
+        "text": "".join(full_text).strip(),
+        "per_token": tokens,
+        "error": None
+    }
+
+
+def build_raw_payload(
+    *,
+    prompt: str,
+    chosen_model: str,
+    final_confidence_pct: int,
+    want_tokens: bool = True,
+    yes_label: str = "yes",
+    no_label: str = "no",
+    topk: int = 5,
+    max_tokens: int = 256,
+):
+    gen_text = ""
+    per_token_block = []
+    err = None
+
+    if want_tokens:
+        res = _gen_with_logprobs(prompt, chosen_model, max_tokens=max_tokens, topk=topk)
+        gen_text = res.get("text", "") or ""
+        per_token_block = res.get("per_token", []) or []
+        err = res.get("error")
+
+    p_yes = max(0.0, min(1.0, final_confidence_pct / 100.0))
+    p_no = round(1.0 - p_yes, 6)
+
+    payload = {
+        "model": chosen_model,
+        "generated_text": gen_text,
+        "per_token": per_token_block,
+        "binary_probs": {
+            yes_label: p_yes,
+            no_label: p_no,
+        },
+    }
+    if err:
+        payload["note"] = f"logprobs unavailable or backend error: {err}"
+    return payload
+
 # ---------------- Nodes ----------------
 def ask_model_a(state: State) -> State:
     ans, conf = _ollama_generate(state.get("model_a", MODEL_A), state["prompt"])
