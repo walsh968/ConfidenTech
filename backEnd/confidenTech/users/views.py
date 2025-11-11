@@ -262,10 +262,14 @@ def get_confidence_score(request):
     '''
     text = request.data.get('text')
 
-    score, answer = confidence_and_answer(text)
+    dict = confidence_and_answer(text)
+
+    answer = dict["best_answer"]
+    a_conf = dict["a_conf_pct"]
+    b_conf = dict["b_conf_pct"]
 
     return Response({
-        'score': score,
+        'score': max(a_conf, b_conf),
         'answer': answer
     }, status=status.HTTP_200_OK)
 

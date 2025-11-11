@@ -6,7 +6,7 @@ urlpatterns = [
     path("confidence/", views.get_confidence_score, name="confidence"),
 
     # Endpoint for confidence function
-    path('analyze/', views.get_confidence_score_and_answer, name='analyze'),
+    #path('analyze/', views.get_confidence_score_and_answer, name='analyze'),
     
     # Export-related endpoints
     path("api/raw/", views.get_raw_outputs, name="raw-outputs"),

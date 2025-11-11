@@ -266,9 +266,9 @@ def confidence_and_answer(
         "weight_agreement": weight_agreement,
     }
     out = app.invoke(initial)
-    if out.get("best_model") == model_b:
-        return int(out.get("b_conf_pct", 0)), out.get("b_answer", "")
-    return int(out.get("a_conf_pct", 0)), out.get("a_answer", "")
-    #return out
+    #if out.get("best_model") == model_b:
+        #return int(out.get("b_conf_pct", 0)), out.get("b_answer", "")
+    #return int(out.get("a_conf_pct", 0)), out.get("a_answer", "")
+    return out
 
 
