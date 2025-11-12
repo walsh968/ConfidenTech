@@ -5,7 +5,6 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { registerUser } from '../services/api';
-import { useAuth } from '../contexts/AuthContext'; // Import useAuth hook
 
 export function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -17,8 +16,8 @@ export function RegisterPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
-  const { login } = useAuth(); 
+  const [success, setSuccess] = useState('');
+  const navigate = useNavigate(); 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -31,6 +30,7 @@ export function RegisterPage() {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+    setSuccess('');
     
     try {
       console.log('Attempting registration with:', formData);
@@ -38,18 +38,10 @@ export function RegisterPage() {
       console.log('Registration result:', result);
       
       if (result.success) {
-        console.log('Registration successful, attempting auto-login');
-        // Auto-login after successful registration
-        const loginResult = await login(formData.email, formData.password);
-        console.log('Login result:', loginResult);
-        
-        if (loginResult.success) {
-          navigate('/');
-        } else {
-          // If auto-login fails, redirect to login page
-          setError('Registration successful! Please log in.');
-          setTimeout(() => navigate('/login'), 2000);
-        }
+        console.log('Registration successful, redirecting to login page');
+        // Redirect to login page after successful registration
+        setSuccess('Registration successful! Redirecting to login page...');
+        setTimeout(() => navigate('/login'), 2000);
       } else {
         console.log('Registration failed:', result);
         setError(result.errors?.email?.[0] || 
@@ -78,6 +70,11 @@ export function RegisterPage() {
           {error && (
             <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
               {error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+              {success}
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
