@@ -82,16 +82,18 @@ export function AIOutputCard({
       </CardHeader>
 
       <CardContent className="space-y-6">
-  <div className="space-y-3">
+  <div className="space-y-3 w-full">
     {/* Question */}
-    <div>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Question</div>
-      <p className="leading-relaxed font-medium">{question}</p>
-    </div>
+    {question && question !== "Ask a Question?" && (
+      <div className="flex justify-end w-full">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm max-w-[80%] ml-auto">
+          <p className="leading-relaxed font-medium text-right">{question}</p>
+        </div>
+      </div>
+    )}
 
     {/* Answer */}
     <div>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Answer</div>
       <p className="leading-relaxed">{answer}</p>
     </div>
 
