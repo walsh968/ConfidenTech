@@ -22,6 +22,35 @@ def _get_prompt_from_request(request, *, allow_get_query: bool = True):
             prompt = request.GET.get("text")
     return (prompt or "").strip()
 
+def _build_explanation(result: dict) -> dict:
+    """
+    Takes the raw result from service.py and builds an explanation
+    """
+    try:
+        # Get the key values from the result dictionary
+        agreement_pct = int(result.get("agreement_pct", 0))
+        a_conf_pct = int(result.get("a_conf_pct", 0))
+        b_conf_pct = int(result.get("b_conf_pct", 0))
+
+        # Build the dynamic reason
+        reason = ""
+        if agreement_pct > 75:
+            reason = f"Both models strongly agreed (agreement: {agreement_pct}%)."
+        elif agreement_pct > 40:
+            reason = f"The models showed partial agreement ({agreement_pct}%)."
+        else:
+            reason = "The models strongly disagreed. This answer represents a best guess and should be reviewed."
+
+        return {
+            "agreement_pct": agreement_pct,
+            "model_a_final_score": a_conf_pct,
+            "model_b_final_score": b_conf_pct,
+            "reason": reason
+        }
+    
+    except Exception:
+        # Fail gracefully
+        return {"reason": "An error occurred while building the explanation."}
 
 @api_view(['GET', 'POST'])
 @permission_classes([AllowAny])
@@ -58,8 +87,10 @@ def get_confidence_score(request):
         best_answer=result.get("best_answer"),
     )
 
+    explanation = _build_explanation(result)
+
     return Response(
-        {'confidence': log_entry.final_confidence, 'answer': log_entry.best_answer},
+        {'confidence': log_entry.final_confidence, 'answer': log_entry.best_answer, 'explanation': explanation},
         status=status.HTTP_200_OK
     )
 

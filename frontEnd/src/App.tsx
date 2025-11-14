@@ -16,6 +16,13 @@ import { createPortal } from "react-dom";
 ========================= */
 type Confidence = number | "Unknown";
 
+export interface Explanation {
+  agreement_pct: number;
+  model_a_final_score: number;
+  model_b_final_score: number;
+  reason: string;
+}
+
 export type AIOutput = {
   id: string;
   question?: string;
@@ -32,6 +39,7 @@ export type AIOutput = {
   }[];
   comparisonSummary: string;
   userFeedback: "agree" | "disagree" | null;
+  explanation?: Explanation | null;
 };
 
 export type ViewMode = "educational" | "critical";
@@ -270,21 +278,34 @@ function Dashboard() {
     setIsAnalyzing(true);
 
     // Implement actual API call
-    const response = await fetch("http://127.0.0.1:8000/api/users/analyze/", {
+    // const response = await fetch("http://127.0.0.1:8000/api/users/analyze/", {
+    //   method: "POST",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //     "Accept": "application/json",
+    //   },
+    //   body: JSON.stringify({
+    //     text: inputText,
+    //   }),
+    // });
+    const response = await fetch("http://127.0.0.1:8000/llm/confidence/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
       },
       body: JSON.stringify({
-        text: inputText,
+        text: inputText,      // Backend expects 'text'
       }),
     });
 
     const data = await response.json();
-    console.log("Confidence Score: ", data.score);
+    // Data now contains: { confidence, answer, explanation }
+    console.log("Confidence Score: ", data.confidence);
     console.log("Answer: ", data.answer);
+    console.log("Explanation: ", data.explanation);
 
+    // UNCOMMENT BELOW WHEN DONE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     const response2 = await fetch("http://127.0.0.1:8000/api/users/sites/", {
       method: "POST",
       headers: {
@@ -302,7 +323,7 @@ function Dashboard() {
 
 
     //await new Promise((resolve) => setTimeout(resolve, 2000));
-    const analysisResult = generateAnalysis(inputText, data.answer, data.score);
+    const analysisResult = generateAnalysis(inputText, data.answer, data.confidence, data.explanation);
     setOutputs((prev) => [...prev, analysisResult]);
     setIsAnalyzing(false);
   };
@@ -335,7 +356,7 @@ function Dashboard() {
     );
   };
 
-  const generateAnalysis = (question: string, text: string, score: number): AIOutput => {
+  const generateAnalysis = (question: string, text: string, score: number, explanation: Explanation | null): AIOutput => {
     const textLength = text.length;
     const hasNumbers = /\d/.test(text);
     const hasScientificTerms = /\b(study|research|evidence|data|analysis|according to)\b/i.test(text);
@@ -399,11 +420,16 @@ function Dashboard() {
           userRating: null,
         },
       ],
-      comparisonSummary: `Analysis of the provided text shows ${
-        (confidence as number) >= 70 ? "strong" : (confidence as number) >= 50 ? "moderate" : "limited"
-      } confidence based on content structure, factual indicators, and language patterns. ${
-        hasScientificTerms ? "Scientific terminology detected suggests higher reliability." : ""
-      } ${hasPredictive ? "Predictive language indicates inherent uncertainty." : ""}`,
+      // comparisonSummary: `Analysis of the provided text shows ${
+      //   (confidence as number) >= 70 ? "strong" : (confidence as number) >= 50 ? "moderate" : "limited"
+      // } confidence based on content structure, factual indicators, and language patterns. ${
+      //   hasScientificTerms ? "Scientific terminology detected suggests higher reliability." : ""
+      // } ${hasPredictive ? "Predictive language indicates inherent uncertainty." : ""}`,
+      
+      // Use new data from backend
+      comparisonSummary: explanation?.reason || "No summary provided.",
+      // Store full explanation object
+      explanation: explanation,
       userFeedback: null,
     };
   };
@@ -477,9 +503,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
+  // if (!isAuthenticated) {
+  //   return <Navigate to="/login" replace />;
+  // }
 
   return <>{children}</>;
 }

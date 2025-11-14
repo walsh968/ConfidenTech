@@ -4,6 +4,7 @@ import { Separator } from "./ui/separator";
 import { ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import { cn } from "./ui/utils";
 import React from "react";
+import { Explanation } from "../App";
 
 
 interface Reference {
@@ -16,13 +17,13 @@ interface Reference {
 
 interface ReferenceSectionProps {
   references: Reference[];
-  comparisonSummary: string;
+  explanation: Explanation | null | undefined;
   onReferenceRating: (referenceId: string, rating: "up" | "down" | null) => void;
 }
 
 export function ReferenceSection({ 
   references, 
-  comparisonSummary, 
+  explanation, 
   onReferenceRating 
 }: ReferenceSectionProps) {
   const handleRatingClick = (referenceId: string, rating: "up" | "down") => {
@@ -102,7 +103,7 @@ export function ReferenceSection({
         <Card className="bg-primary/5 border-primary/20">
           <CardContent className="p-4">
             <p className="text-sm leading-relaxed text-foreground">
-              {comparisonSummary}
+              {explanation?.reason || "No explanation available."}
             </p>
           </CardContent>
         </Card>

@@ -122,7 +122,8 @@ export function AIOutputCard({
           <Separator className="mb-4" />
           <ReferenceSection
             references={output.references}
-            comparisonSummary={output.comparisonSummary}
+            //comparisonSummary={output.comparisonSummary}
+            explanation={output.explanation}
             onReferenceRating={(referenceId, rating) => onReferenceRating(output.id, referenceId, rating)}
           />
         </CollapsibleContent>
