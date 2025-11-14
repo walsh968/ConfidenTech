@@ -303,27 +303,49 @@ function Dashboard() {
     // Data now contains: { confidence, answer, explanation }
     console.log("Confidence Score: ", data.confidence);
     console.log("Answer: ", data.answer);
-    console.log("Explanation: ", data.explanation);
 
-    // UNCOMMENT BELOW WHEN DONE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    const response2 = await fetch("http://127.0.0.1:8000/api/users/sites/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
-      body: JSON.stringify({
-        prompt: inputText,
-        answer: data.answer,
-      }),
-    });
+    let references: AIOutput['references'] = [];
+    
+    try {
+      const response2 = await fetch("http://127.0.0.1:8000/api/users/sites/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: inputText,
+          answer: data.answer,
+        }),
+      });
 
-    const data2 = await response2.json();
-    console.log("link: ", data2.link)
+      if (response2.ok) {
+        const data2 = await response2.json();
+        console.log("References data: ", data2);
+        console.log("Titles: ", data2.title);
+        console.log("Links: ", data2.link);
+        console.log("Snippets: ", data2.snippet);
 
+        // Map backend references to frontend format
+        if (data2.title && Array.isArray(data2.title) && data2.title.length > 0) {
+          references = data2.title.map((title: string, index: number) => ({
+            id: `ref-${Date.now()}-${index}`,
+            title: title || "Untitled Reference",
+            url: data2.link?.[index] || "",
+            description: data2.snippet?.[index] || "No description available",
+            userRating: null as "up" | "down" | null,
+          }));
+        }
+      } else {
+        console.error("Failed to fetch references:", response2.status, response2.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching references:", error);
+      // Continue with empty references array
+    }
 
     //await new Promise((resolve) => setTimeout(resolve, 2000));
-    const analysisResult = generateAnalysis(inputText, data.answer, data.confidence, data.explanation);
+    const analysisResult = generateAnalysis(inputText, data.answer, data.score, references);
     setOutputs((prev) => [...prev, analysisResult]);
     setIsAnalyzing(false);
   };
@@ -356,7 +378,12 @@ function Dashboard() {
     );
   };
 
-  const generateAnalysis = (question: string, text: string, score: number, explanation: Explanation | null): AIOutput => {
+  const generateAnalysis = (
+    question: string, 
+    text: string, 
+    score: number, 
+    references: AIOutput['references'] = []
+  ): AIOutput => {
     const textLength = text.length;
     const hasNumbers = /\d/.test(text);
     const hasScientificTerms = /\b(study|research|evidence|data|analysis|according to)\b/i.test(text);
@@ -377,25 +404,29 @@ function Dashboard() {
       category = "General Analysis";
     }
 
-    // const isUnknown = Math.random() < 0.25;
-    // const confidence: Confidence = isUnknown
-    //   ? "Unknown"
-    //   : (() => {
-    //       if (hasScientificTerms && hasNumbers && textLength > 100)
-    //         return Math.floor(75 + Math.random() * 20); // 75-95
-    //       if (hasPredictive || textLength < 50) return Math.floor(30 + Math.random() * 25); // 30-55
-    //       return Math.floor(55 + Math.random() * 25); // 55-80
-    //     })();
-
     const newId = `analysis-${Date.now()}`;
-    // const mockAnswer =
-    //   confidence === "Unknown"
-    //     ? "(Mock) Unable to provide a clear confidence level at the moment. Based on your question, I’ll offer a cautious suggestion derived from available references and pattern insights."
-    //     : `(Mock) Based on your question, my brief answer is: this is a ${
-    //         (confidence as number) >= 70 ? "fairly confident" : (confidence as number) >= 50 ? "somewhat supported" : "uncertain"
-    //       } conclusion. Please review the reference data for further verification.`;
+    let confidence = score;
 
-    let confidence = score
+    // Use actual references from backend, or fallback to empty array
+    const actualReferences = references.length > 0 ? references : [];
+
+    // Generate comparison summary based on references
+    let comparisonSummary = `Analysis of the provided text shows ${
+      (confidence as number) >= 70 ? "strong" : (confidence as number) >= 50 ? "moderate" : "limited"
+    } confidence based on content structure, factual indicators, and language patterns.`;
+    
+    if (actualReferences.length > 0) {
+      comparisonSummary += ` Found ${actualReferences.length} relevant reference${actualReferences.length > 1 ? 's' : ''} to support this information.`;
+    } else {
+      comparisonSummary += " No external references were found for this response.";
+    }
+    
+    if (hasScientificTerms) {
+      comparisonSummary += " Scientific terminology detected suggests higher reliability.";
+    }
+    if (hasPredictive) {
+      comparisonSummary += " Predictive language indicates inherent uncertainty.";
+    }
 
     return {
       id: newId,
@@ -404,32 +435,8 @@ function Dashboard() {
       confidence,
       timestamp: new Date().toISOString(),
       category,
-      references: [
-        {
-          id: `ref-${newId}-1`,
-          title: "Source Analysis Database",
-          url: "https://example.com/source-analysis",
-          description: "Automated reference analysis for the provided content",
-          userRating: null,
-        },
-        {
-          id: `ref-${newId}-2`,
-          title: "Content Verification System",
-          url: "https://example.com/verification",
-          description: "Cross-referenced content validation and fact-checking",
-          userRating: null,
-        },
-      ],
-      // comparisonSummary: `Analysis of the provided text shows ${
-      //   (confidence as number) >= 70 ? "strong" : (confidence as number) >= 50 ? "moderate" : "limited"
-      // } confidence based on content structure, factual indicators, and language patterns. ${
-      //   hasScientificTerms ? "Scientific terminology detected suggests higher reliability." : ""
-      // } ${hasPredictive ? "Predictive language indicates inherent uncertainty." : ""}`,
-      
-      // Use new data from backend
-      comparisonSummary: explanation?.reason || "No summary provided.",
-      // Store full explanation object
-      explanation: explanation,
+      references: actualReferences,
+      comparisonSummary,
       userFeedback: null,
     };
   };

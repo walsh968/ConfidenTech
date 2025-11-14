@@ -324,17 +324,20 @@ def get_links_and_summaries(request):
     # Get website (title, link, snippet)
     listOfSites = get_sites(query)
 
-    # Extract titles and links
+    # Extract titles, links, and snippets
     titles = []
     links = []
+    snippets = []
     i = 0
     for item in listOfSites:
         if i > 4:
             break
         titles.append(item[0])
         links.append(item[1])
+        snippets.append(item[2] if len(item) > 2 else "")
         i += 1
     print(f'links: {links}')
+    print(f'snippets: {snippets}')
     
     #text = get_text_content(links[0])
 
@@ -344,6 +347,7 @@ def get_links_and_summaries(request):
     return Response({
         'title': titles,
         'link': links,
+        'snippet': snippets,
     }, status=status.HTTP_200_OK)
 
 
