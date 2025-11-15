@@ -8,6 +8,7 @@ import { InputAnalysis } from "./components/input-analysis";
 import { LoginPage } from "./components/LoginPage";
 import { RegisterPage } from "./components/RegisterPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { ProfileMenu } from "./components/profile-menu";
 import React from "react";
 import { createPortal } from "react-dom";
 
@@ -532,13 +533,7 @@ function DashboardWithAuth() {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm">Welcome, {user?.first_name || user?.email}</span>
-              <button
-                onClick={logout}
-                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-md text-sm transition-colors"
-              >
-                Logout
-              </button>
+              <ProfileMenu user={user} onLogout={logout} />
             </div>
           </div>
         </div>
