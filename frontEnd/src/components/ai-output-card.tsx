@@ -178,6 +178,8 @@ export function AIOutputCard({
             references={output.references}
             comparisonSummary={output.comparisonSummary}
             onReferenceRating={(referenceId, rating) => onReferenceRating(output.id, referenceId, rating)}
+            answerText={answer}
+            sentenceAlignment={output.sentenceAlignment}
           />
         </CollapsibleContent>
       </Collapsible>

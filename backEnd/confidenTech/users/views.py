@@ -307,7 +307,7 @@ def get_sites(query):
     return listOfSites
 
 from webSearch import get_text_content
-from LLMInteraction import form_query, summarize_web_page
+from LLMInteraction import form_query, summarize_web_page, analyze_sentence_alignment
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def get_links_and_summaries(request):
@@ -339,6 +339,16 @@ def get_links_and_summaries(request):
     print(f'links: {links}')
     print(f'snippets: {snippets}')
     
+    # Analyze sentence-level alignment
+    sentenceAlignment = {"aligned": [], "conflicting": [], "sentences": []}
+    if listOfSites and len(listOfSites) > 0:
+        try:
+            sentenceAlignment = analyze_sentence_alignment(prompt, answer, listOfSites)
+            print(f'Sentence alignment: aligned={sentenceAlignment["aligned"]}, conflicting={sentenceAlignment["conflicting"]}')
+        except Exception as e:
+            print(f'Error analyzing sentence alignment: {e}')
+            sentenceAlignment = {"aligned": [], "conflicting": [], "sentences": []}
+    
     #text = get_text_content(links[0])
 
     #summary = summarize_web_page(prompt, answer, text)
@@ -348,6 +358,7 @@ def get_links_and_summaries(request):
         'title': titles,
         'link': links,
         'snippet': snippets,
+        'sentenceAlignment': sentenceAlignment,
     }, status=status.HTTP_200_OK)
 
 

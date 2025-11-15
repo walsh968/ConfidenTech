@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Separator } from "./ui/separator";
 import { ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import { cn } from "./ui/utils";
+import { HighlightedText } from "./highlighted-text";
 import React from "react";
 
 
@@ -18,12 +19,20 @@ interface ReferenceSectionProps {
   references: Reference[];
   comparisonSummary: string;
   onReferenceRating: (referenceId: string, rating: "up" | "down" | null) => void;
+  answerText?: string; // The AI answer text to display in Evidence Analysis
+  sentenceAlignment?: {
+    aligned: number[];
+    conflicting: number[];
+    sentences?: string[];
+  };
 }
 
 export function ReferenceSection({ 
   references, 
   comparisonSummary, 
-  onReferenceRating 
+  onReferenceRating,
+  answerText,
+  sentenceAlignment
 }: ReferenceSectionProps) {
   const handleRatingClick = (referenceId: string, rating: "up" | "down") => {
     // Toggle rating if same rating is clicked, otherwise set new rating
@@ -96,14 +105,37 @@ export function ReferenceSection({
 
       <Separator />
 
-      {/* Comparison Summary */}
+      {/* Evidence Analysis - Show AI answer with highlighting */}
       <div>
         <h5 className="mb-2 text-primary">Evidence Analysis</h5>
         <Card className="bg-primary/5 border-primary/20">
           <CardContent className="p-4">
-            <p className="text-sm leading-relaxed text-foreground">
-              {comparisonSummary}
-            </p>
+            {answerText && sentenceAlignment ? (
+              <HighlightedText
+                text={answerText}
+                alignedIndices={sentenceAlignment.aligned}
+                conflictingIndices={sentenceAlignment.conflicting}
+                sentences={sentenceAlignment.sentences}
+                className="text-sm text-foreground"
+              />
+            ) : (
+              <p className="text-sm leading-relaxed text-foreground">
+                {comparisonSummary}
+              </p>
+            )}
+            <div className="mt-3 pt-3 border-t border-primary/10">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Color Coding:</p>
+              <div className="flex flex-col gap-1.5 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="bg-green-100 text-green-900 px-2 py-0.5 rounded inline-block">Aligned</span>
+                  <span className="text-muted-foreground">Sentences supported by sources</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-red-100 text-red-900 px-2 py-0.5 rounded inline-block">Conflicting</span>
+                  <span className="text-muted-foreground">Sentences that contradict sources</span>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
