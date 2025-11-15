@@ -62,22 +62,33 @@ export const loginUser = async (credentials: LoginCredentials): Promise<ApiRespo
 };
 
 // Get user profile
-export const getUserProfile = async (): Promise<ApiResponse<{ user: User }>> => {
+export const getUserProfile = async (): Promise<ApiResponse<{ user: User }> & { status?: number }> => {
   try {
     const response = await fetch(`${API_BASE_URL}/profile/`, {
       method: 'GET',
       headers: {
-        'Accept': 'application/json', // Add this
+        'Accept': 'application/json',
       },
       credentials: 'include',
     });
 
+    // Log response for debugging
+    console.log('getUserProfile response status:', response.status, 'ok:', response.ok);
+    
     const data = await response.json();
-    return { success: response.ok, data };
+    console.log('getUserProfile response data:', data);
+    
+    return { 
+      success: response.ok, 
+      data: response.ok ? data : undefined,
+      status: response.status 
+    };
   } catch (error) {
+    console.error('getUserProfile network error:', error);
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'Network error' 
+      error: error instanceof Error ? error.message : 'Network error',
+      status: 0 // 0 indicates network error
     };
   }
 };
