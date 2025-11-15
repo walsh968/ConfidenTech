@@ -58,12 +58,15 @@ export function AIOutputCard({
   };
 
   const formatAnswer = (text: string) => {
+    // Remove markdown bold markers (**)
+    const cleanText = text.replace(/\*\*/g, '');
+    
     // Check if the text contains numbered lists (pattern: number followed by period and space)
     const numberedListRegex = /\d+\.\s+/;
     
-    if (numberedListRegex.test(text)) {
+    if (numberedListRegex.test(cleanText)) {
       // Split the text by numbered list items, keeping the delimiters
-      const parts = text.split(/(\d+\.\s+)/g);
+      const parts = cleanText.split(/(\d+\.\s+)/g);
       
       return (
         <div className="space-y-2">
@@ -103,7 +106,7 @@ export function AIOutputCard({
     }
     
     // If no numbered lists, render normally but preserve line breaks
-    return <p className="leading-relaxed whitespace-pre-line">{text}</p>;
+    return <p className="leading-relaxed whitespace-pre-line">{cleanText}</p>;
   };
 
   const contentId = React.useId();
