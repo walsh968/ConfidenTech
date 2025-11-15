@@ -32,6 +32,11 @@ export type AIOutput = {
   }[];
   comparisonSummary: string;
   userFeedback: "agree" | "disagree" | null;
+  sentenceAlignment?: {
+    aligned: number[]; // Indices of aligned sentences
+    conflicting: number[]; // Indices of conflicting sentences
+    sentences?: string[]; // Split sentences for highlighting
+  };
 };
 
 export type ViewMode = "educational" | "critical";
@@ -286,6 +291,7 @@ function Dashboard() {
     console.log("Answer: ", data.answer);
 
     let references: AIOutput['references'] = [];
+    let sentenceAlignment: AIOutput['sentenceAlignment'] = undefined;
     
     try {
       const response2 = await fetch("http://127.0.0.1:8000/api/users/sites/", {
@@ -306,6 +312,7 @@ function Dashboard() {
         console.log("Titles: ", data2.title);
         console.log("Links: ", data2.link);
         console.log("Snippets: ", data2.snippet);
+        console.log("Sentence Alignment: ", data2.sentenceAlignment);
 
         // Map backend references to frontend format
         if (data2.title && Array.isArray(data2.title) && data2.title.length > 0) {
@@ -317,6 +324,15 @@ function Dashboard() {
             userRating: null as "up" | "down" | null,
           }));
         }
+
+        // Get sentence alignment data from backend
+        if (data2.sentenceAlignment) {
+          sentenceAlignment = {
+            aligned: data2.sentenceAlignment.aligned || [],
+            conflicting: data2.sentenceAlignment.conflicting || [],
+            sentences: data2.sentenceAlignment.sentences || [],
+          };
+        }
       } else {
         console.error("Failed to fetch references:", response2.status, response2.statusText);
       }
@@ -326,7 +342,7 @@ function Dashboard() {
     }
 
     //await new Promise((resolve) => setTimeout(resolve, 2000));
-    const analysisResult = generateAnalysis(inputText, data.answer, data.score, references);
+    const analysisResult = generateAnalysis(inputText, data.answer, data.score, references, sentenceAlignment);
     setOutputs((prev) => [...prev, analysisResult]);
     setIsAnalyzing(false);
   };
@@ -363,7 +379,8 @@ function Dashboard() {
     question: string, 
     text: string, 
     score: number, 
-    references: AIOutput['references'] = []
+    references: AIOutput['references'] = [],
+    sentenceAlignment?: AIOutput['sentenceAlignment']
   ): AIOutput => {
     const textLength = text.length;
     const hasNumbers = /\d/.test(text);
@@ -419,6 +436,7 @@ function Dashboard() {
       references: actualReferences,
       comparisonSummary,
       userFeedback: null,
+      sentenceAlignment: sentenceAlignment,
     };
   };
 
