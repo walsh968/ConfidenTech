@@ -57,6 +57,55 @@ export function AIOutputCard({
     }
   };
 
+  const formatAnswer = (text: string) => {
+    // Check if the text contains numbered lists (pattern: number followed by period and space)
+    const numberedListRegex = /\d+\.\s+/;
+    
+    if (numberedListRegex.test(text)) {
+      // Split the text by numbered list items, keeping the delimiters
+      const parts = text.split(/(\d+\.\s+)/g);
+      
+      return (
+        <div className="space-y-2">
+          {parts.map((part, index) => {
+            // Skip empty parts
+            if (!part.trim()) return null;
+            
+            // If this is a numbered marker (like "1. "), combine it with the next part
+            if (/^\d+\.\s+$/.test(part)) {
+              const nextPart = parts[index + 1] || "";
+              // Combine the marker with its content
+              const combined = part + nextPart;
+              // Mark the next part as used
+              if (index + 1 < parts.length) {
+                parts[index + 1] = "";
+              }
+              return (
+                <div key={index} className="leading-relaxed">
+                  {combined.trim()}
+                </div>
+              );
+            }
+            // Regular text (not immediately after a numbered marker)
+            // Check if previous part was not a numbered marker
+            const prevPart = parts[index - 1];
+            if (!prevPart || !/^\d+\.\s+$/.test(prevPart)) {
+              return (
+                <div key={index} className="leading-relaxed">
+                  {part.trim()}
+                </div>
+              );
+            }
+            return null;
+          }).filter(Boolean)}
+        </div>
+      );
+    }
+    
+    // If no numbered lists, render normally but preserve line breaks
+    return <p className="leading-relaxed whitespace-pre-line">{text}</p>;
+  };
+
   const contentId = React.useId();
   return (
     <Card className="w-full shadow-sm border hover:shadow-md transition-shadow">
@@ -94,7 +143,7 @@ export function AIOutputCard({
 
     {/* Answer */}
     <div>
-      <p className="leading-relaxed">{answer}</p>
+      {formatAnswer(answer)}
     </div>
 
     <div className="flex items-center justify-between">
