@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 class AIResponseLog(models.Model):
     input_query = models.TextField()
@@ -15,5 +16,25 @@ class AIResponseLog(models.Model):
     best_answer = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
+class ExportAuditLog(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        help_text="Who triggered the export"
+    )
+    endpoint = models.CharField(max_length=128, help_text="API path used")
+    dataset = models.CharField(max_length=128, help_text="Logical dataset name")
+    params = models.JSONField(help_text="Parameters used to export")
+    file_format = models.CharField(max_length=16)
+    filename = models.CharField(max_length=256, blank=True)
+    status = models.CharField(max_length=16, default="success")
+    message = models.TextField(blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
     def __str__(self):
-        return f"{self.timestamp.strftime('%Y-%m-%d %H:%M')} - {self.input_query[:40]}..."
+        return f"[{self.created_at:%Y-%m-%d %H:%M:%S}] {self.user_id} {self.endpoint} {self.dataset} {self.file_format} {self.status}"
