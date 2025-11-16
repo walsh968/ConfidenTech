@@ -93,19 +93,8 @@ def get_confidence_score(request):
         status=status.HTTP_200_OK
     )
 
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def get_raw_outputs(request):
-
-    prompt = _get_prompt_from_request(request, allow_get_query=True)
-    if not prompt:
-        return Response({'error': 'Prompt is empty'}, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        result = confidence_and_answer(prompt)
-    except Exception as e:
-        return Response({'detail': f'backend error: {e}'}, status=status.HTTP_502_BAD_GATEWAY)
+def _generate_raw_payload(prompt: str) -> dict:
+    result = confidence_and_answer(prompt)
 
     model_a = result.get("model_a")
     model_b = result.get("model_b")
@@ -274,6 +263,11 @@ def export_raw_outputs(request):
         best_answer=best_answer
     )
 
+def _format_export_response(payload: dict, fmt: str) -> HttpResponse:
+    """
+    This is the "formatter." It takes a payload and returns
+    either a JSON Response or a CSV HttpResponse.
+    """
     if fmt == "json":
         suggested = f"raw_export_{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}.json"
         _log_export(
@@ -281,7 +275,7 @@ def export_raw_outputs(request):
             params=audit_params, file_format="json", status="success", filename=suggested
         )
         return Response(payload, status=status.HTTP_200_OK)
-
+    
     buf = io.StringIO()
     buf.write('\ufeff')
     writer = csv.writer(buf)
@@ -334,6 +328,56 @@ def export_raw_outputs(request):
     resp['Content-Disposition'] = f'attachment; filename="{fname}"'
     return resp
 
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def get_raw_outputs(request):
+
+    prompt = _get_prompt_from_request(request, allow_get_query=True)
+    if not prompt:
+        return Response({'error': 'Prompt is empty'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        payload = _generate_raw_payload(prompt)
+    except Exception as e:
+        return Response({'detail': f'backend error: {e}'}, status=status.HTTP_502_BAD_GATEWAY)
+
+    return Response(payload, status=status.HTTP_200_OK)     # Return as JSON
+    
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])   
+def export_raw_outputs(request):
+
+    if request.method == 'GET':
+        prompt = (request.GET.get('text') or "").strip()
+        fmt = (request.GET.get('export_format') or "json").lower()
+    else:
+        data = request.data if hasattr(request, "data") and isinstance(request.data, dict) else {}
+        prompt = (data.get('text') or request.query_params.get('text') or "").strip()
+        fmt = (data.get('export_format') or data.get('format')
+               or request.query_params.get('export_format')
+               or request.query_params.get('format') or "json").lower()
+
+    if not prompt:
+        return Response({
+            "detail": "Provide prompt via POST {'text': '...','format':'csv|json'} "
+                      "or GET ?text=...&export_format=csv|json"
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    if fmt not in ("json", "csv"):
+        return Response({"detail": "export_format/format must be 'json' or 'csv'."},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # Call payload helper
+        payload = _generate_raw_payload(prompt)
+    except Exception as e:
+        return Response({'detail': f'backend error: {e}'}, status=status.HTTP_502_BAD_GATEWAY)
+
+    # Call format helper
+    return _format_export_response(payload, fmt)
+        
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])

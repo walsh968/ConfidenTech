@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AIOutputCard } from "./components/ai-output-card";
 import { FilterControls } from "./components/filter-controls";
@@ -8,6 +8,7 @@ import { InputAnalysis } from "./components/input-analysis";
 import { LoginPage } from "./components/LoginPage";
 import { RegisterPage } from "./components/RegisterPage";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { ProfileMenu } from "./components/profile-menu";
 import React from "react";
 import { createPortal } from "react-dom";
 
@@ -32,6 +33,11 @@ export type AIOutput = {
   }[];
   comparisonSummary: string;
   userFeedback: "agree" | "disagree" | null;
+  sentenceAlignment?: {
+    aligned: number[]; // Indices of aligned sentences
+    conflicting: number[]; // Indices of conflicting sentences
+    sentences?: string[]; // Split sentences for highlighting
+  };
 };
 
 export type ViewMode = "educational" | "critical";
@@ -236,11 +242,38 @@ function FixedInputBar({ children }: { children: React.ReactNode }) {
    Dashboard
 ========================= */
 function Dashboard() {
-  const [outputs, setOutputs] = useState<AIOutput[]>(mockAIOutputs);
+  // Load outputs from localStorage on initial mount
+  const loadOutputsFromStorage = (): AIOutput[] => {
+    try {
+      const stored = localStorage.getItem('confidenTech_outputs');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Validate that it's an array
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading outputs from localStorage:', error);
+    }
+    // Return empty array instead of mock data for fresh starts
+    return [];
+  };
+
+  const [outputs, setOutputs] = useState<AIOutput[]>(loadOutputsFromStorage);
   const [confidenceThreshold, setConfidenceThreshold] = useState(0);
   const [sortOrder, setSortOrder] = useState<SortOrder>("time");
   const [viewMode, setViewMode] = useState<ViewMode>("educational");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Save outputs to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('confidenTech_outputs', JSON.stringify(outputs));
+    } catch (error) {
+      console.error('Error saving outputs to localStorage:', error);
+    }
+  }, [outputs]);
 
   // sorted by time
   const filteredAndSortedOutputs = useMemo(() => {
@@ -268,8 +301,76 @@ function Dashboard() {
 
   const handleAnalyze = async (inputText: string) => {
     setIsAnalyzing(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    const analysisResult = generateAnalysis(inputText);
+
+    // Implement actual API call
+    const response = await fetch("http://127.0.0.1:8000/api/users/analyze/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({
+        text: inputText,
+      }),
+    });
+
+    const data = await response.json();
+    console.log("Confidence Score: ", data.score);
+    console.log("Answer: ", data.answer);
+
+    let references: AIOutput['references'] = [];
+    let sentenceAlignment: AIOutput['sentenceAlignment'] = undefined;
+    
+    try {
+      const response2 = await fetch("http://127.0.0.1:8000/api/users/sites/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: inputText,
+          answer: data.answer,
+        }),
+      });
+
+      if (response2.ok) {
+        const data2 = await response2.json();
+        console.log("References data: ", data2);
+        console.log("Titles: ", data2.title);
+        console.log("Links: ", data2.link);
+        console.log("Snippets: ", data2.snippet);
+        console.log("Sentence Alignment: ", data2.sentenceAlignment);
+
+        // Map backend references to frontend format
+        if (data2.title && Array.isArray(data2.title) && data2.title.length > 0) {
+          references = data2.title.map((title: string, index: number) => ({
+            id: `ref-${Date.now()}-${index}`,
+            title: title || "Untitled Reference",
+            url: data2.link?.[index] || "",
+            description: data2.snippet?.[index] || "No description available",
+            userRating: null as "up" | "down" | null,
+          }));
+        }
+
+        // Get sentence alignment data from backend
+        if (data2.sentenceAlignment) {
+          sentenceAlignment = {
+            aligned: data2.sentenceAlignment.aligned || [],
+            conflicting: data2.sentenceAlignment.conflicting || [],
+            sentences: data2.sentenceAlignment.sentences || [],
+          };
+        }
+      } else {
+        console.error("Failed to fetch references:", response2.status, response2.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching references:", error);
+      // Continue with empty references array
+    }
+
+    //await new Promise((resolve) => setTimeout(resolve, 2000));
+    const analysisResult = generateAnalysis(inputText, data.answer, data.score, references, sentenceAlignment);
     setOutputs((prev) => [...prev, analysisResult]);
     setIsAnalyzing(false);
   };
@@ -302,7 +403,13 @@ function Dashboard() {
     );
   };
 
-  const generateAnalysis = (text: string): AIOutput => {
+  const generateAnalysis = (
+    question: string, 
+    text: string, 
+    score: number, 
+    references: AIOutput['references'] = [],
+    sentenceAlignment?: AIOutput['sentenceAlignment']
+  ): AIOutput => {
     const textLength = text.length;
     const hasNumbers = /\d/.test(text);
     const hasScientificTerms = /\b(study|research|evidence|data|analysis|according to)\b/i.test(text);
@@ -323,53 +430,41 @@ function Dashboard() {
       category = "General Analysis";
     }
 
-    const isUnknown = Math.random() < 0.25;
-    const confidence: Confidence = isUnknown
-      ? "Unknown"
-      : (() => {
-          if (hasScientificTerms && hasNumbers && textLength > 100)
-            return Math.floor(75 + Math.random() * 20); // 75-95
-          if (hasPredictive || textLength < 50) return Math.floor(30 + Math.random() * 25); // 30-55
-          return Math.floor(55 + Math.random() * 25); // 55-80
-        })();
-
     const newId = `analysis-${Date.now()}`;
-    const mockAnswer =
-      confidence === "Unknown"
-        ? "(Mock) Unable to provide a clear confidence level at the moment. Based on your question, I’ll offer a cautious suggestion derived from available references and pattern insights."
-        : `(Mock) Based on your question, my brief answer is: this is a ${
-            (confidence as number) >= 70 ? "fairly confident" : (confidence as number) >= 50 ? "somewhat supported" : "uncertain"
-          } conclusion. Please review the reference data for further verification.`;
+    let confidence = score;
+
+    // Use actual references from backend, or fallback to empty array
+    const actualReferences = references.length > 0 ? references : [];
+
+    // Generate comparison summary based on references
+    let comparisonSummary = `Analysis of the provided text shows ${
+      (confidence as number) >= 70 ? "strong" : (confidence as number) >= 50 ? "moderate" : "limited"
+    } confidence based on content structure, factual indicators, and language patterns.`;
+    
+    if (actualReferences.length > 0) {
+      comparisonSummary += ` Found ${actualReferences.length} relevant reference${actualReferences.length > 1 ? 's' : ''} to support this information.`;
+    } else {
+      comparisonSummary += " No external references were found for this response.";
+    }
+    
+    if (hasScientificTerms) {
+      comparisonSummary += " Scientific terminology detected suggests higher reliability.";
+    }
+    if (hasPredictive) {
+      comparisonSummary += " Predictive language indicates inherent uncertainty.";
+    }
 
     return {
       id: newId,
-      question: text,
-      text: mockAnswer,
+      question: question,
+      text: text,
       confidence,
       timestamp: new Date().toISOString(),
       category,
-      references: [
-        {
-          id: `ref-${newId}-1`,
-          title: "Source Analysis Database",
-          url: "https://example.com/source-analysis",
-          description: "Automated reference analysis for the provided content",
-          userRating: null,
-        },
-        {
-          id: `ref-${newId}-2`,
-          title: "Content Verification System",
-          url: "https://example.com/verification",
-          description: "Cross-referenced content validation and fact-checking",
-          userRating: null,
-        },
-      ],
-      comparisonSummary: `Analysis of the provided text shows ${
-        (confidence as number) >= 70 ? "strong" : (confidence as number) >= 50 ? "moderate" : "limited"
-      } confidence based on content structure, factual indicators, and language patterns. ${
-        hasScientificTerms ? "Scientific terminology detected suggests higher reliability." : ""
-      } ${hasPredictive ? "Predictive language indicates inherent uncertainty." : ""}`,
+      references: actualReferences,
+      comparisonSummary,
       userFeedback: null,
+      sentenceAlignment: sentenceAlignment,
     };
   };
 
@@ -465,13 +560,7 @@ function DashboardWithAuth() {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-sm">Welcome, {user?.first_name || user?.email}</span>
-              <button
-                onClick={logout}
-                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-md text-sm transition-colors"
-              >
-                Logout
-              </button>
+              <ProfileMenu user={user} onLogout={logout} />
             </div>
           </div>
         </div>

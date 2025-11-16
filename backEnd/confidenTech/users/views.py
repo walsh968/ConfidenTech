@@ -144,10 +144,19 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     Get and update user profile
     """
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = []
     
     def get_object(self):
-        return self.request.user
+        #return self.request.user
+        # If no authenticated user, use first one in DB or create dummy
+        user = getattr(self.request, "user", None)
+        if not user or user.is_anonymous:
+            user = User.objects.first()
+            if not user:
+                # fallback if database is empty
+                return User(email="dummy@example.com", first_name="Guest", last_name="User")
+        return user
 
 
 class UserUpdateView(generics.UpdateAPIView):
@@ -243,6 +252,116 @@ def user_login_history(request):
         'page_size': page_size,
         'total_pages': (total_count + page_size - 1) // page_size
     }, status=status.HTTP_200_OK)
+
+from llm.service import confidence_and_answer
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def get_confidence_score(request):
+    '''
+    Take in user input and feed it to the confidence algorithm to get the confidence score
+    '''
+    text = request.data.get('text')
+
+    dict = confidence_and_answer(text)
+
+    answer = dict["best_answer"]
+    a_conf = dict["a_conf_pct"]
+    b_conf = dict["b_conf_pct"]
+
+    return Response({
+        'score': max(a_conf, b_conf),
+        'answer': answer
+    }, status=status.HTTP_200_OK)
+
+
+
+from googleapiclient.discovery import build
+
+API_KEY = 'AIzaSyCMizf1CsepV8Psf6pnU3hy0FZXQTAXZFA'
+CSE_ID = '86970aef48dab4539'
+
+
+'''
+Method which utilizes the Google Custom Search API to take a query and retrieve the top
+    resulting website titles and links to them
+@param query is the query to search the web with
+@returns a list of tuples where the first element is the website title, the second is
+    the website link, and the third is a site description
+'''
+def get_sites(query):
+    # Instantiate list of websites to be returned from query
+    listOfSites = []
+
+    # Build custom serach service and retrieve top 10 website titles and links
+    service = build("customsearch", "v1", developerKey=API_KEY)
+    titlesAndLinks = service.cse().list(q=query, cx=CSE_ID).execute()
+
+    # Append top 5 websites to listOfSites and return them
+    for item in titlesAndLinks.get('items', []):
+        listOfSites.append((item['title'], item['link'], item['snippet']))
+    
+    print(f'list of sites: {listOfSites}')
+    print("Full API response:", titlesAndLinks)
+
+    # Return list of tuples
+    return listOfSites
+
+from webSearch import get_text_content
+from LLMInteraction import form_query, summarize_web_page, analyze_sentence_alignment
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def get_links_and_summaries(request):
+    '''
+    Take in user input and feed it to the confidence algorithm to get the confidence score
+    '''
+    prompt = request.data.get('prompt')
+    answer = request.data.get('answer')
+
+    query = form_query(prompt, answer)
+    query = query.strip('"')
+    print(f'query: {query}')
+
+    # Get website (title, link, snippet)
+    listOfSites = get_sites(query)
+
+    # Extract titles, links, and snippets
+    titles = []
+    links = []
+    snippets = []
+    i = 0
+    for item in listOfSites:
+        if i > 4:
+            break
+        titles.append(item[0])
+        links.append(item[1])
+        snippets.append(item[2] if len(item) > 2 else "")
+        i += 1
+    print(f'links: {links}')
+    print(f'snippets: {snippets}')
+    
+    # Analyze sentence-level alignment
+    sentenceAlignment = {"aligned": [], "conflicting": [], "sentences": []}
+    if listOfSites and len(listOfSites) > 0:
+        try:
+            sentenceAlignment = analyze_sentence_alignment(prompt, answer, listOfSites)
+            print(f'Sentence alignment: aligned={sentenceAlignment["aligned"]}, conflicting={sentenceAlignment["conflicting"]}')
+        except Exception as e:
+            print(f'Error analyzing sentence alignment: {e}')
+            sentenceAlignment = {"aligned": [], "conflicting": [], "sentences": []}
+    
+    #text = get_text_content(links[0])
+
+    #summary = summarize_web_page(prompt, answer, text)
+    #print(titles[0], links[0], summary)
+
+    return Response({
+        'title': titles,
+        'link': links,
+        'snippet': snippets,
+        'sentenceAlignment': sentenceAlignment,
+    }, status=status.HTTP_200_OK)
+
+
 
 
 

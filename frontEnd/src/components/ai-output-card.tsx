@@ -57,6 +57,58 @@ export function AIOutputCard({
     }
   };
 
+  const formatAnswer = (text: string) => {
+    // Remove markdown bold markers (**)
+    const cleanText = text.replace(/\*\*/g, '');
+    
+    // Check if the text contains numbered lists (pattern: number followed by period and space)
+    const numberedListRegex = /\d+\.\s+/;
+    
+    if (numberedListRegex.test(cleanText)) {
+      // Split the text by numbered list items, keeping the delimiters
+      const parts = cleanText.split(/(\d+\.\s+)/g);
+      
+      return (
+        <div className="space-y-2">
+          {parts.map((part, index) => {
+            // Skip empty parts
+            if (!part.trim()) return null;
+            
+            // If this is a numbered marker (like "1. "), combine it with the next part
+            if (/^\d+\.\s+$/.test(part)) {
+              const nextPart = parts[index + 1] || "";
+              // Combine the marker with its content
+              const combined = part + nextPart;
+              // Mark the next part as used
+              if (index + 1 < parts.length) {
+                parts[index + 1] = "";
+              }
+              return (
+                <div key={index} className="leading-relaxed">
+                  {combined.trim()}
+                </div>
+              );
+            }
+            // Regular text (not immediately after a numbered marker)
+            // Check if previous part was not a numbered marker
+            const prevPart = parts[index - 1];
+            if (!prevPart || !/^\d+\.\s+$/.test(prevPart)) {
+              return (
+                <div key={index} className="leading-relaxed">
+                  {part.trim()}
+                </div>
+              );
+            }
+            return null;
+          }).filter(Boolean)}
+        </div>
+      );
+    }
+    
+    // If no numbered lists, render normally but preserve line breaks
+    return <p className="leading-relaxed whitespace-pre-line">{cleanText}</p>;
+  };
+
   const contentId = React.useId();
   return (
     <Card className="w-full shadow-sm border hover:shadow-md transition-shadow">
@@ -82,17 +134,19 @@ export function AIOutputCard({
       </CardHeader>
 
       <CardContent className="space-y-6">
-  <div className="space-y-3">
+  <div className="space-y-3 w-full">
     {/* Question */}
-    <div>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Question</div>
-      <p className="leading-relaxed font-medium">{question}</p>
-    </div>
+    {question && question !== "Ask a Question?" && (
+      <div className="flex justify-end w-full">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm max-w-[80%] ml-auto">
+          <p className="leading-relaxed font-medium text-right">{question}</p>
+        </div>
+      </div>
+    )}
 
     {/* Answer */}
     <div>
-      <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Answer</div>
-      <p className="leading-relaxed">{answer}</p>
+      {formatAnswer(answer)}
     </div>
 
     <div className="flex items-center justify-between">
@@ -124,6 +178,8 @@ export function AIOutputCard({
             references={output.references}
             comparisonSummary={output.comparisonSummary}
             onReferenceRating={(referenceId, rating) => onReferenceRating(output.id, referenceId, rating)}
+            answerText={answer}
+            sentenceAlignment={output.sentenceAlignment}
           />
         </CollapsibleContent>
       </Collapsible>
