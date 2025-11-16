@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AIOutputCard } from "./components/ai-output-card";
 import { FilterControls } from "./components/filter-controls";
@@ -242,11 +242,38 @@ function FixedInputBar({ children }: { children: React.ReactNode }) {
    Dashboard
 ========================= */
 function Dashboard() {
-  const [outputs, setOutputs] = useState<AIOutput[]>(mockAIOutputs);
+  // Load outputs from localStorage on initial mount
+  const loadOutputsFromStorage = (): AIOutput[] => {
+    try {
+      const stored = localStorage.getItem('confidenTech_outputs');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Validate that it's an array
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading outputs from localStorage:', error);
+    }
+    // Return empty array instead of mock data for fresh starts
+    return [];
+  };
+
+  const [outputs, setOutputs] = useState<AIOutput[]>(loadOutputsFromStorage);
   const [confidenceThreshold, setConfidenceThreshold] = useState(0);
   const [sortOrder, setSortOrder] = useState<SortOrder>("time");
   const [viewMode, setViewMode] = useState<ViewMode>("educational");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Save outputs to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('confidenTech_outputs', JSON.stringify(outputs));
+    } catch (error) {
+      console.error('Error saving outputs to localStorage:', error);
+    }
+  }, [outputs]);
 
   // sorted by time
   const filteredAndSortedOutputs = useMemo(() => {
