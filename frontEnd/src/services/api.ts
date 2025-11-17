@@ -1,5 +1,5 @@
 // API service for ConfidenTech backend integration
-const API_BASE_URL = 'https://confiden-tech-backend-311.eba-j33ncgzm.us-east-2.elasticbeanstalk.com/api/users';
+const API_BASE_URL = 'http://localhost:8000/api/users';
 
 export interface LoginCredentials {
   email: string;
