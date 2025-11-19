@@ -9,7 +9,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from .models import AIResponseLog
-from .service import confidence_and_answer, build_raw_payload
+from .service import _generate_explanation_text, confidence_and_answer, build_raw_payload
 
 def _get_prompt_from_request(request, *, allow_get_query: bool = True):
     prompt = None
@@ -22,7 +22,7 @@ def _get_prompt_from_request(request, *, allow_get_query: bool = True):
             prompt = request.GET.get("text")
     return (prompt or "").strip()
 
-def _build_explanation(result: dict) -> dict:
+def _build_explanation(result: dict, prompt: str, best_answer: str, final_confidence: int) -> dict:
     """
     Takes the raw result from service.py and builds an explanation
     """
@@ -32,14 +32,20 @@ def _build_explanation(result: dict) -> dict:
         a_conf_pct = int(result.get("a_conf_pct", 0))
         b_conf_pct = int(result.get("b_conf_pct", 0))
 
-        # Build the dynamic reason
-        reason = ""
-        if agreement_pct > 75:
-            reason = f"Both models strongly agreed (agreement: {agreement_pct}%)."
-        elif agreement_pct > 40:
-            reason = f"The models showed partial agreement ({agreement_pct}%)."
-        else:
-            reason = "The models strongly disagreed. This answer represents a best guess and should be reviewed."
+        # # Build the dynamic reason
+        # reason = ""
+        # if agreement_pct > 75:
+        #     reason = f"Both models strongly agreed (agreement: {agreement_pct}%)."
+        # elif agreement_pct > 40:
+        #     reason = f"The models showed partial agreement ({agreement_pct}%)."
+        # else:
+        #     reason = "The models strongly disagreed. This answer represents a best guess and should be reviewed."
+        reason = _generate_explanation_text(
+            prompt=prompt,
+            answer=best_answer,
+            final_score=final_confidence,
+            agreement=agreement_pct
+        )
 
         return {
             "agreement_pct": agreement_pct,
@@ -87,7 +93,7 @@ def get_confidence_score(request):
         best_answer=result.get("best_answer"),
     )
 
-    explanation = _build_explanation(result)
+    explanation = _build_explanation(result, prompt, log_entry.best_answer, log_entry.final_confidence)
 
     return Response(
         {'confidence': log_entry.final_confidence, 'answer': log_entry.best_answer, 'explanation': explanation},

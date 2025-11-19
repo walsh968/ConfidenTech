@@ -303,6 +303,7 @@ function Dashboard() {
     // Data now contains: { confidence, answer, explanation }
     console.log("Confidence Score: ", data.confidence);
     console.log("Answer: ", data.answer);
+    console.log("Explanation: ", data.explanation);
 
     let references: AIOutput['references'] = [];
     
@@ -345,7 +346,7 @@ function Dashboard() {
     }
 
     //await new Promise((resolve) => setTimeout(resolve, 2000));
-    const analysisResult = generateAnalysis(inputText, data.answer, data.score, references);
+    const analysisResult = generateAnalysis(inputText, data.answer, data.confidence, data.explanation, references);
     setOutputs((prev) => [...prev, analysisResult]);
     setIsAnalyzing(false);
   };
@@ -382,6 +383,7 @@ function Dashboard() {
     question: string, 
     text: string, 
     score: number, 
+    explanation: Explanation | null,
     references: AIOutput['references'] = []
   ): AIOutput => {
     const textLength = text.length;
@@ -436,7 +438,10 @@ function Dashboard() {
       timestamp: new Date().toISOString(),
       category,
       references: actualReferences,
-      comparisonSummary,
+      // Use new data from backend
+      comparisonSummary: explanation?.reason || "No summary provided.",
+      // Store full explanation object
+      explanation: explanation,
       userFeedback: null,
     };
   };
