@@ -149,13 +149,12 @@ export function AIOutputCard({
       {formatAnswer(answer)}
     </div>
 
-    <div className="flex items-center justify-between">
+      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+      <div className="flex items-center justify-between mt-4">
       <FeedbackWidget
         feedback={output.userFeedback}
         onFeedbackChange={(feedback) => onFeedbackChange(output.id, feedback)}
       />
-
-      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <CollapsibleTrigger asChild aria-label="Show details" aria-controls={contentId}>
           <Button variant="ghost" size="sm" className="gap-1 hover:bg-accent/10 hover:text-accent">
             {isExpanded ? (
@@ -171,11 +170,12 @@ export function AIOutputCard({
             )}
           </Button>
         </CollapsibleTrigger>
-
+      </div>
         <CollapsibleContent className="mt-4" id={contentId} role="region">
           <Separator className="mb-4" />
           <ReferenceSection
             references={output.references}
+            explanation={output.explanation}
             comparisonSummary={output.comparisonSummary}
             onReferenceRating={(referenceId, rating) => onReferenceRating(output.id, referenceId, rating)}
             answerText={answer}
@@ -183,7 +183,7 @@ export function AIOutputCard({
           />
         </CollapsibleContent>
       </Collapsible>
-    </div>
+    
   </div>
 </CardContent>
     </Card>
