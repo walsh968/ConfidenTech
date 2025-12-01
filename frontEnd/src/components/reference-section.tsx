@@ -5,6 +5,7 @@ import { ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react";
 import { cn } from "./ui/utils";
 import { HighlightedText } from "./highlighted-text";
 import React from "react";
+import { Explanation } from "../App";
 
 
 interface Reference {
@@ -17,6 +18,7 @@ interface Reference {
 
 interface ReferenceSectionProps {
   references: Reference[];
+  explanation: Explanation | null | undefined;
   comparisonSummary: string;
   onReferenceRating: (referenceId: string, rating: "up" | "down" | null) => void;
   answerText?: string; // The AI answer text to display in Evidence Analysis
@@ -29,6 +31,7 @@ interface ReferenceSectionProps {
 
 export function ReferenceSection({ 
   references, 
+  explanation,
   comparisonSummary, 
   onReferenceRating,
   answerText,
@@ -134,6 +137,16 @@ export function ReferenceSection({
                   <span className="bg-red-100 text-red-900 px-2 py-0.5 rounded inline-block">Conflicting</span>
                   <span className="text-muted-foreground">Sentences that contradict sources</span>
                 </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-primary/5 border-primary/20 mt-4">
+          <CardContent className="p-4">                        
+            <div className="mt-3 pt-3 border-primary/10">
+              <p className="text-sm border-b font-medium text-muted-foreground mb-2">Explanation:</p>
+              <div className="text-sm leading-relaxed text-foreground">
+                <p>{explanation?.reason || "No explanation available."}</p>            
               </div>
             </div>
           </CardContent>

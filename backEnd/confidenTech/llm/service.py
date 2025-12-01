@@ -135,6 +135,71 @@ def _gen_with_logprobs(prompt: str, model: str, *, max_tokens: int = 256, topk: 
         "error": None
     }
 
+def _generate_explanation_text(prompt: str, answer: str, final_score: int, agreement: int) -> str:
+    """
+    Uses an LLM to generate a human-readable explanation for the confidence score.
+    """
+
+    system_prompt = f"""
+    You are an AI transparency analyst. Your job is to write a brief, 1-2 sentences explanation for a confidence score.
+    You will be given the user's prompt, the AI's final answer, the final confidence score (0-100), and the agreement score between the two AI models (0-100).
+
+    - If the confidence is high (> 80) and agreement is high (>75), explain WHY the answer us well-supported.
+        - If the answer is just a fact (e.g. "Paris is the capital of France"): Say something similar to "High confidence is supported by the definitive, factual nature of the statement and strong model agreement."
+
+    - If the confidence is medium (60-80), explain WHY the answer is somewhat supported and what makes it uncertain.
+        - For example, something similar to "The score reflects partial agreement between models, suggesting the topic may be nuanced or open to interpretation."
+
+    - If the confidence is low (< 60) or agreement is low (< 60), state that the answer is speculative and it should be verified.
+        - For example, something similar to "Low confidence indicates significant disagreement between internal models or inherent uncertainty in the prediction."
+
+    - DO NOT mention "Model A", "Model B", or "log-likelihoods" in your response.
+
+    - Be direct and professional. Write the explanation only.
+
+    - DO NOT hallucinate that studies exist if they are not in the text.
+
+    Example:
+
+    Prompt: "What is the benefit of meditation?"
+
+    Answer: Adding meditation to your daily routine can reduce stress levels by up to 40% according to recent studies. Even 10 minutes per day can make a significant difference in mental well-being.
+
+    Confidence Score: 86
+
+    Agreement Score: 92
+
+    Explanation: The AI is highly confident. Multiple peer-reviewed studies and medical institutions consistently report stress reduction benefits from meditation, supporting the high confidence level.
+
+    """
+    user_prompt = f"""
+
+    Prompt: {prompt}
+    Answer: {answer}
+    Confidence Score: {final_score}
+    Agreement Score: {agreement}
+    Explanation:
+
+    """
+
+    payload = {
+        "model": MODEL_A,
+        "prompt": f"{system_prompt}\n\nUser: {user_prompt}",
+        "format": "", # Ask for text, not JSON\
+        "options": {"temperature": 0.3},
+        "stream": False,
+    }
+
+    try:
+        r = requests.post(GEN, json=payload, timeout=120)
+        r.raise_for_status()
+        response_text = r.json().get("response", "").strip() # Extract the generated text
+
+        return response_text or "No explanation could be generated."
+
+    except Exception as e:
+        print(f"Error generating explanation: {e}")
+        return "Explanation is unavailable due to a backend error."
 
 def build_raw_payload(
     *,

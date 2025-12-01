@@ -4,12 +4,13 @@ import csv, io, json as pyjson
 from datetime import datetime
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated  
+from rest_framework.permissions import IsAuthenticated, AllowAny  
 from rest_framework.response import Response
 from .models import AIResponseLog, ExportAuditLog  
-from .service import confidence_and_answer, build_raw_payload
+from .service import confidence_and_answer, build_raw_payload, _generate_explanation_text
 from .compliance import detect_sensitive_data, sanitize_text
-
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 # ---------- helpers ----------
 def _get_client_ip(request):
@@ -55,8 +56,43 @@ def _get_prompt_from_request(request, *, allow_get_query: bool = True):
             prompt = request.GET.get("text")
     return (prompt or "").strip()
 
+def _build_explanation(result: dict, prompt: str, best_answer: str, final_confidence: int) -> dict:
+    """
+    Takes the raw result and context and builds a user-friendly explanation.
+    """
+    try:
+        # Get the key values from the result dictionary
+        agreement_pct = int(result.get("agreement_pct", 0))
+        a_conf_pct = int(result.get("a_conf_pct", 0))
+        b_conf_pct = int(result.get("b_conf_pct", 0))
+        
+        # Calculate final confidence for the LLM prompt
+        final_confidence = max(a_conf_pct, b_conf_pct) 
+
+        # Build the dynamic reason by calling the LLM helper in service.py
+        reason = _generate_explanation_text(
+            prompt=result.get("prompt", ""),
+            answer=result.get("best_answer", ""),
+            final_score=final_confidence,
+            agreement=agreement_pct
+        )
+
+        return {
+            "agreement_pct": agreement_pct,
+            "model_a_final_score": a_conf_pct,
+            "model_b_final_score": b_conf_pct,
+            "reason": reason
+        }
+    
+    except Exception as e:
+        # Fail gracefully, logging the exact error
+        print(f"Error in _build_explanation: {e}")
+        return {"reason": f"Failed to generate explanation (Error: {type(e).__name__})."}
+
+
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
+@method_decorator(csrf_exempt, name='dispatch')
 def get_confidence_score(request):
     """
     Take in a prompt from the front end, and retrieve an AI output and confidence score
@@ -88,8 +124,10 @@ def get_confidence_score(request):
         best_answer=result.get("best_answer"),
     )
 
+    explanation = _build_explanation(result, prompt, log_entry.best_answer, log_entry.final_confidence)
+
     return Response(
-        {'confidence': log_entry.final_confidence, 'answer': log_entry.best_answer},
+        {'confidence': log_entry.final_confidence, 'answer': log_entry.best_answer, 'explanation': explanation},
         status=status.HTTP_200_OK
     )
 
