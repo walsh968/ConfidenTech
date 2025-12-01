@@ -330,7 +330,7 @@ function Dashboard() {
         "Accept": "application/json",
       },
       body: JSON.stringify({
-        text: inputText,
+        text: inputText,      // Backend expects 'text'
       }),
     });
 
