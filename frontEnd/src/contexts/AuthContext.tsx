@@ -32,7 +32,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkBackendAvailable = async () => {
     try {
       const res = await fetch(
-        "https://confiden-tech-backend-311.eba-j33ncgzm.us-east-2.elasticbeanstalk.com/api/health/",
+        "https://confidentech.onrender.com/api/users/health/",
         { method: "GET" }
       );
       return res.ok;

@@ -19,6 +19,7 @@ urlpatterns = [
 
     # Endpoint for confidence function
     path('analyze/', views.get_confidence_score, name='analyze'),
-    path('sites/', views.get_links_and_summaries, name='sites')
+    path('sites/', views.get_links_and_summaries, name='sites'),
+    path('health/', views.health, name='health')
  
 ]
