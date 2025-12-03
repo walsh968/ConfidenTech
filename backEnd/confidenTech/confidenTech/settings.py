@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-your-secret-key-here-change-in-production'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', "https://confidentech.onrender.com",]
 
 
 # Application definition
@@ -150,7 +150,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3001",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "*",
+    "https://confiden-tech.vercel.app/",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -164,7 +164,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3001",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "*",
+    "https://confiden-tech.vercel.app/",
+    "https://confidentech.onrender.com",
 ]
 
 # REST Framework settings
