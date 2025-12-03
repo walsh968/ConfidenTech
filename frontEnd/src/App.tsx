@@ -323,7 +323,7 @@ function Dashboard() {
     setIsAnalyzing(true);
 
     // Implement actual API call
-    const response = await fetch("http://127.0.0.1:8000/llm/confidence/", {
+    const response = await fetch("https://confidentech.onrender.com/llm/confidence/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -351,7 +351,7 @@ function Dashboard() {
     let sentenceAlignment: AIOutput['sentenceAlignment'] = undefined;
 
     try {
-      const response2 = await fetch("http://127.0.0.1:8000/api/users/sites/", {
+      const response2 = await fetch("https://confidentech.onrender.com/api/users/sites/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

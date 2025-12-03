@@ -1,5 +1,5 @@
 // API service for ConfidenTech backend integration
-const API_BASE_URL = 'http://localhost:8000/api/users';
+const API_BASE_URL = 'https://confidentech.onrender.com';
 
 export interface LoginCredentials {
   email: string;
