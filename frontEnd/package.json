@@ -59,7 +59,7 @@
             "@vitejs/plugin-react-swc": "^3.10.2",
             "happy-dom": "^20.0.11",
             "vite": "^6.4.1",
-            "vitest": "^4.0.14"
+            "vitest": "^4.0.15"
       },
       "scripts": {
             "dev": "vite",
