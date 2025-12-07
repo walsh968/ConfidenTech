@@ -3,7 +3,7 @@ import { Slider } from "./ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import React from "react";
 
-type SortOrder = "time" | "high-to-low" | "low-to-high";
+type SortOrder = "oldest-to-recent" | "high-to-low" | "low-to-high";
 
 interface FilterControlsProps {
   confidenceThreshold: number;
@@ -33,7 +33,7 @@ export function FilterControls({
           aria-valuemin={0}
           aria-valuemax={100}
           value={[confidenceThreshold]}
-          onValueChange={(value) => onThresholdChange(value[0])}
+          onValueChange={(value: number[]) => onThresholdChange(value[0])}
           max={100}
           min={0}
           step={5}
@@ -49,7 +49,7 @@ export function FilterControls({
             <SelectValue placeholder="Sort by"/>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="time">Time</SelectItem>
+            <SelectItem value="oldest-to-recent">Oldest to Recent</SelectItem>
             <SelectItem value="high-to-low">High to Low</SelectItem>
             <SelectItem value="low-to-high">Low to High</SelectItem>
           </SelectContent>

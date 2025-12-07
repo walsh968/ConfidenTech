@@ -33,7 +33,7 @@ function normalize(confidence: Confidence): {
   }
 
   const n = Math.min(100, Math.max(0, Number(confidence)));
-  const level: Level = n >= 75 ? "high" : n >= 50 ? "medium" : "low";
+  const level: Level = n >= 80 ? "high" : n >= 60 ? "medium" : "low";
 
   const palette =
     level === "high"

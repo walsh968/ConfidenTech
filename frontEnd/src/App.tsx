@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AIOutputCard } from "./components/ai-output-card";
 import { FilterControls } from "./components/filter-controls";
@@ -17,6 +17,13 @@ import { createPortal } from "react-dom";
 ========================= */
 type Confidence = number | "Unknown";
 
+export interface Explanation {
+  agreement_pct: number;      // e.g., 85
+  model_a_final_score: number; // e.g., 90
+  model_b_final_score: number; // e.g., 80
+  reason: string;             // e.g., "The AI is highly confident. Multiple peer-reviewed studies ..."
+}
+
 export type AIOutput = {
   id: string;
   question?: string;
@@ -31,6 +38,7 @@ export type AIOutput = {
     description: string;
     userRating: "up" | "down" | null;
   }[];
+  explanation?: Explanation | null;
   comparisonSummary: string;
   userFeedback: "agree" | "disagree" | null;
   sentenceAlignment?: {
@@ -41,7 +49,7 @@ export type AIOutput = {
 };
 
 export type ViewMode = "educational" | "critical";
-type SortOrder = "time" | "high-to-low" | "low-to-high";
+type SortOrder = "oldest-to-recent" | "high-to-low" | "low-to-high";
 
 /* =========================
    Mock data
@@ -262,9 +270,21 @@ function Dashboard() {
 
   const [outputs, setOutputs] = useState<AIOutput[]>(loadOutputsFromStorage);
   const [confidenceThreshold, setConfidenceThreshold] = useState(0);
-  const [sortOrder, setSortOrder] = useState<SortOrder>("time");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("oldest-to-recent");
   const [viewMode, setViewMode] = useState<ViewMode>("educational");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Create a reference to track the end of the list of outputs
+  const outputsEndRef = useRef<HTMLDivElement>(null);
+
+  // Function to scroll to the bottom of the list
+  const scrollToBottom = () => {
+    outputsEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [outputs.length]);    // Dependency array: runs when length of 'outputs' updates
 
   // Save outputs to localStorage whenever they change
   useEffect(() => {
@@ -277,15 +297,15 @@ function Dashboard() {
 
   // sorted by time
   const filteredAndSortedOutputs = useMemo(() => {
-    const allowUnknown = (sortOrder === "time") && (confidenceThreshold === 0);
+    const allowUnknown = (sortOrder === "oldest-to-recent") && (confidenceThreshold === 0);
     const filtered = outputs.filter((o) => {
       if (o.confidence === "Unknown") {
-        return allowUnknown; 
+        return allowUnknown;
       }
       return Number(o.confidence) >= confidenceThreshold;
     });
-  
-    if (sortOrder === "time") {
+
+    if (sortOrder === "oldest-to-recent") {
       return filtered.sort(
         (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       );
@@ -303,26 +323,35 @@ function Dashboard() {
     setIsAnalyzing(true);
 
     // Implement actual API call
-    const response = await fetch("http://127.0.0.1:8000/api/users/analyze/", {
+    const response = await fetch("https://confidentech.onrender.com/llm/confidence/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
       },
       body: JSON.stringify({
-        text: inputText,
+        text: inputText,      // Backend expects 'text'
       }),
     });
 
+    // --- Check for successful status before parsing JSON ---
+    if (!response.ok) {
+      console.error("API Call Failed:", response.status, response.statusText);
+      alert(`Analysis failed: Server returned error ${response.status}.`);
+      setIsAnalyzing(false);
+      return;
+    }
+
     const data = await response.json();
-    console.log("Confidence Score: ", data.score);
+    console.log("Confidence Score: ", data.confidence);
     console.log("Answer: ", data.answer);
+    console.log("Explanation: ", data.explanation)
 
     let references: AIOutput['references'] = [];
     let sentenceAlignment: AIOutput['sentenceAlignment'] = undefined;
-    
+
     try {
-      const response2 = await fetch("http://127.0.0.1:8000/api/users/sites/", {
+      const response2 = await fetch("https://confidentech.onrender.com/api/users/sites/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -370,7 +399,8 @@ function Dashboard() {
     }
 
     //await new Promise((resolve) => setTimeout(resolve, 2000));
-    const analysisResult = generateAnalysis(inputText, data.answer, data.score, references, sentenceAlignment);
+    const analysisResult = generateAnalysis(inputText, data.answer, data.confidence, data.explanation, references, sentenceAlignment);
+    console.log("analysisResult: ", analysisResult)
     setOutputs((prev) => [...prev, analysisResult]);
     setIsAnalyzing(false);
   };
@@ -393,20 +423,21 @@ function Dashboard() {
       prev.map((output) =>
         output.id === outputId
           ? {
-              ...output,
-              references: output.references.map((ref) =>
-                ref.id === referenceId ? { ...ref, userRating: rating } : ref
-              ),
-            }
+            ...output,
+            references: output.references.map((ref) =>
+              ref.id === referenceId ? { ...ref, userRating: rating } : ref
+            ),
+          }
           : output
       )
     );
   };
 
   const generateAnalysis = (
-    question: string, 
-    text: string, 
-    score: number, 
+    question: string,
+    text: string,
+    score: number,
+    explanation: Explanation | null,
     references: AIOutput['references'] = [],
     sentenceAlignment?: AIOutput['sentenceAlignment']
   ): AIOutput => {
@@ -437,22 +468,23 @@ function Dashboard() {
     const actualReferences = references.length > 0 ? references : [];
 
     // Generate comparison summary based on references
-    let comparisonSummary = `Analysis of the provided text shows ${
-      (confidence as number) >= 70 ? "strong" : (confidence as number) >= 50 ? "moderate" : "limited"
-    } confidence based on content structure, factual indicators, and language patterns.`;
-    
+    let comparisonSummary = `Analysis of the provided text shows ${(confidence as number) >= 70 ? "strong" : (confidence as number) >= 50 ? "moderate" : "limited"
+      } confidence based on content structure, factual indicators, and language patterns.`;
+
     if (actualReferences.length > 0) {
       comparisonSummary += ` Found ${actualReferences.length} relevant reference${actualReferences.length > 1 ? 's' : ''} to support this information.`;
     } else {
       comparisonSummary += " No external references were found for this response.";
     }
-    
+
     if (hasScientificTerms) {
       comparisonSummary += " Scientific terminology detected suggests higher reliability.";
     }
     if (hasPredictive) {
       comparisonSummary += " Predictive language indicates inherent uncertainty.";
     }
+
+    explanation: explanation
 
     return {
       id: newId,
@@ -462,6 +494,7 @@ function Dashboard() {
       timestamp: new Date().toISOString(),
       category,
       references: actualReferences,
+      explanation,
       comparisonSummary,
       userFeedback: null,
       sentenceAlignment: sentenceAlignment,
@@ -511,6 +544,8 @@ function Dashboard() {
               />
             ))
           )}
+
+          <div ref={outputsEndRef} />
         </div>
       </div>
       <FixedInputBar>
@@ -537,9 +572,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // if (!isAuthenticated) {
-  //   return <Navigate to="/login" replace />;
-  // }
+  if (!isAuthenticated) {
+     return <Navigate to="/login" replace />;
+   }
 
   return <>{children}</>;
 }

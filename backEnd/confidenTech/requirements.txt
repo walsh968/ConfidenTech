@@ -1,5 +1,3 @@
-arxiv==2.3.0
-beautifulsoup4==4.14.2
 Django==4.2.17
 djangorestframework==3.14.0
 django-cors-headers==4.3.1
@@ -9,7 +7,6 @@ langgraph==0.6.8
 mongoengine==0.27.0
 django-extensions==3.2.3
 python-decouple==3.8
-Pillow==10.1.0
 django-filter==23.5
 django-crispy-forms==2.1
 crispy-bootstrap5==0.7
@@ -19,8 +16,11 @@ django-redis==5.4.0
 whitenoise==6.6.0
 gunicorn==21.2.0
 psycopg2-binary==2.9.9
-numpy==2.3.4
-openai==2.7.1
+numpy==2.3.3
+openai==2.2.0
 pymongo==4.6.1
-readability_lxml==0.8.4.1
 Requests==2.32.5
+Pillow==10.3.0
+arxiv==2.3.0
+beautifulsoup4==4.14.2
+readability-lxml==0.8.4.1
