@@ -23,10 +23,21 @@ export function InputAnalysis({ onAnalyze, isAnalyzing }: InputAnalysisProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    // Enter alone: Submit the query
+    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
-      handleAnalyze();
+      if (inputText.trim() && !isAnalyzing) {
+        handleAnalyze();
+      }
     }
+    // Ctrl+Enter or Cmd+Enter: Also submit (for power users)
+    else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      if (inputText.trim() && !isAnalyzing) {
+        handleAnalyze();
+      }
+    }
+    // Shift+Enter: Allow newline (default behavior, don't prevent)
   };
 
   return (

@@ -362,6 +362,9 @@ def get_links_and_summaries(request):
     }, status=status.HTTP_200_OK)
 
 
-
+@api_view(["GET"])
+@permission_classes([permissions.AllowAny])
+def health(request):
+    return Response({"status": "ok"})
 
 
