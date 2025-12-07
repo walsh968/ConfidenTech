@@ -11,6 +11,8 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ProfileMenu } from "./components/profile-menu";
 import React from "react";
 import { createPortal } from "react-dom";
+import { UserProfilePage } from "./components/UserProfilePage";
+
 
 /* =========================
    Types
@@ -50,163 +52,6 @@ export type AIOutput = {
 
 export type ViewMode = "educational" | "critical";
 type SortOrder = "oldest-to-recent" | "high-to-low" | "low-to-high";
-
-/* =========================
-   Mock data
-========================= */
-const mockAIOutputs: AIOutput[] = [
-  {
-    id: "1",
-    question: "q1?",
-    text:
-      "Climate change is primarily caused by human activities, particularly the emission of greenhouse gases from burning fossil fuels. The scientific consensus is overwhelming, with over 97% of climate scientists agreeing on this fact.",
-    confidence: 94,
-    timestamp: "2024-01-15T10:30:00Z",
-    category: "Climate Science",
-    references: [
-      {
-        id: "ref-1",
-        title: "IPCC Sixth Assessment Report",
-        url: "https://ipcc.ch/assessment-report/ar6/",
-        description: "Comprehensive scientific assessment of climate change evidence",
-        userRating: null,
-      },
-      {
-        id: "ref-2",
-        title: "NASA Climate Evidence",
-        url: "https://climate.nasa.gov/evidence/",
-        description: "NASA's compilation of climate change evidence and data",
-        userRating: "up",
-      },
-    ],
-    comparisonSummary:
-      "All referenced sources strongly align with the AI output, providing consistent evidence for human-caused climate change. The consensus data and scientific assessments support the confidence level.",
-    userFeedback: null,
-  },
-  {
-    id: "2",
-    question: "q2?",
-    text:
-      "The stock market will likely experience significant volatility in the next quarter due to geopolitical tensions and inflation concerns. Investors should consider diversifying their portfolios.",
-    confidence: 67,
-    timestamp: "2024-01-14T15:45:00Z",
-    category: "Financial Analysis",
-    references: [
-      {
-        id: "ref-3",
-        title: "Federal Reserve Economic Data",
-        url: "https://fred.stlouisfed.org/",
-        description: "Latest economic indicators and inflation data",
-        userRating: "up",
-      },
-      {
-        id: "ref-4",
-        title: "Market Analysis Report",
-        url: "https://example.com/market-report",
-        description: "Third-party analysis of current market conditions",
-        userRating: null,
-      },
-    ],
-    comparisonSummary:
-      "Economic data supports concerns about inflation, but market prediction sources show mixed signals. Some indicators suggest stability while others point to volatility, reflecting the moderate confidence score.",
-    userFeedback: "disagree",
-  },
-  {
-    id: "3",
-    question: "q3?",
-    text:
-      "Quantum computing could revolutionize cryptography within the next 5-10 years, potentially breaking current encryption methods. Organizations should start preparing quantum-resistant security measures.",
-    confidence: 73,
-    timestamp: "2024-01-13T09:20:00Z",
-    category: "Technology",
-    references: [
-      {
-        id: "ref-5",
-        title: "NIST Post-Quantum Cryptography",
-        url: "https://csrc.nist.gov/projects/post-quantum-cryptography",
-        description: "Official NIST standards for quantum-resistant cryptography",
-        userRating: "up",
-      },
-      {
-        id: "ref-6",
-        title: "IBM Quantum Computing Timeline",
-        url: "https://research.ibm.com/quantum-computing",
-        description: "IBM's roadmap for quantum computing development",
-        userRating: null,
-      },
-    ],
-    comparisonSummary:
-      "Official standards bodies and major tech companies acknowledge the quantum threat timeline, though exact timing remains uncertain. Sources generally support the 5-10 year timeframe with some variation.",
-    userFeedback: "agree",
-  },
-  {
-    id: "4",
-    question: "q4?",
-    text:
-      "Adding meditation to your daily routine can reduce stress levels by up to 40% according to recent studies. Even 10 minutes per day can make a significant difference in mental well-being.",
-    confidence: 86,
-    timestamp: "2024-01-12T14:15:00Z",
-    category: "Health & Wellness",
-    references: [
-      {
-        id: "ref-7",
-        title: "Mayo Clinic - Meditation Benefits",
-        url: "https://mayoclinic.org/meditation",
-        description: "Medical evidence for meditation's stress reduction benefits",
-        userRating: "up",
-      },
-      {
-        id: "ref-8",
-        title: "Harvard Health - Mindfulness Research",
-        url: "https://health.harvard.edu/mindfulness",
-        description: "Harvard's research on mindfulness and stress reduction",
-        userRating: "up",
-      },
-    ],
-    comparisonSummary:
-      "Multiple peer-reviewed studies and medical institutions consistently report stress reduction benefits from meditation. The 40% figure aligns with several research studies, supporting the high confidence level.",
-    userFeedback: null,
-  },
-  {
-    id: "5",
-    question: "q5?",
-    text:
-      "The James Webb Space Telescope might discover signs of extraterrestrial life in the next few years by analyzing exoplanet atmospheres for biosignatures like oxygen and methane.",
-    confidence: 45,
-    timestamp: "2024-01-11T11:30:00Z",
-    category: "Space Science",
-    references: [
-      {
-        id: "ref-9",
-        title: "NASA JWST Mission Overview",
-        url: "https://jwst.nasa.gov/",
-        description: "Official NASA documentation of JWST capabilities",
-        userRating: null,
-      },
-      {
-        id: "ref-10",
-        title: "Exoplanet Biosignature Research",
-        url: "https://example.com/biosignatures",
-        description: "Current research on detecting life through atmospheric analysis",
-        userRating: "down",
-      },
-    ],
-    comparisonSummary:
-      "While JWST has the technical capability to detect atmospheric signatures, the likelihood of finding definitive biosignatures remains speculative. Scientific sources emphasize the challenges and uncertainties involved.",
-    userFeedback: null,
-  },
-  {
-    id: "6",
-    question: "q6?",
-    text: "This response currently has an unknown confidence from the backend.",
-    confidence: "Unknown",
-    timestamp: "2024-01-10T08:00:00Z",
-    category: "General Analysis",
-    references: [],
-    comparisonSummary: "Backend did not provide a numeric confidence score.",
-    userFeedback: null,
-  },
-];
 
 /* =========================
    Fixed input bar via Portal
@@ -250,50 +95,58 @@ function FixedInputBar({ children }: { children: React.ReactNode }) {
    Dashboard
 ========================= */
 function Dashboard() {
-  // Load outputs from localStorage on initial mount
-  const loadOutputsFromStorage = (): AIOutput[] => {
-    try {
-      const stored = localStorage.getItem('confidenTech_outputs');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // Validate that it's an array
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch (error) {
-      console.error('Error loading outputs from localStorage:', error);
-    }
-    // Return empty array instead of mock data for fresh starts
-    return [];
-  };
+  const { user } = useAuth();  
 
-  const [outputs, setOutputs] = useState<AIOutput[]>(loadOutputsFromStorage);
+  const [outputs, setOutputs] = useState<AIOutput[]>([]);
   const [confidenceThreshold, setConfidenceThreshold] = useState(0);
   const [sortOrder, setSortOrder] = useState<SortOrder>("oldest-to-recent");
   const [viewMode, setViewMode] = useState<ViewMode>("educational");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // Create a reference to track the end of the list of outputs
   const outputsEndRef = useRef<HTMLDivElement>(null);
 
-  // Function to scroll to the bottom of the list
   const scrollToBottom = () => {
-    outputsEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+    outputsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
     scrollToBottom();
-  }, [outputs.length]);    // Dependency array: runs when length of 'outputs' updates
+  }, [outputs.length]);
 
-  // Save outputs to localStorage whenever they change
   useEffect(() => {
-    try {
-      localStorage.setItem('confidenTech_outputs', JSON.stringify(outputs));
-    } catch (error) {
-      console.error('Error saving outputs to localStorage:', error);
+    if (!user) {
+      setOutputs([]);
+      return;
     }
-  }, [outputs]);
+
+    const storageKey = `confidenTech_outputs_${user.id}`;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setOutputs(parsed);
+        } else {
+          setOutputs([]);
+        }
+      } else {
+        setOutputs([]);
+      }
+    } catch (error) {
+      console.error("Error loading outputs from localStorage:", error);
+      setOutputs([]);
+    }
+  }, [user?.id]); 
+
+  useEffect(() => {
+    if (!user) return;
+    const storageKey = `confidenTech_outputs_${user.id}`;
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(outputs));
+    } catch (error) {
+      console.error("Error saving outputs to localStorage:", error);
+    }
+  }, [outputs, user?.id]);
 
   // sorted by time
   const filteredAndSortedOutputs = useMemo(() => {
@@ -323,16 +176,18 @@ function Dashboard() {
     setIsAnalyzing(true);
 
     // Implement actual API call
-    const response = await fetch("https://confidentech.onrender.com/llm/confidence/", {
+    // const response = await fetch("https://confidentech.onrender.com/llm/confidence/", {
+    const response = await fetch("http://localhost:8000/llm/confidence/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
       },
       body: JSON.stringify({
-        text: inputText,      // Backend expects 'text'
+        text: inputText,
       }),
     });
+    
 
     // --- Check for successful status before parsing JSON ---
     if (!response.ok) {
@@ -351,17 +206,19 @@ function Dashboard() {
     let sentenceAlignment: AIOutput['sentenceAlignment'] = undefined;
 
     try {
-      const response2 = await fetch("https://confidentech.onrender.com/api/users/sites/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: inputText,
-          answer: data.answer,
-        }),
-      });
+      // const response2 = await fetch("https://confidentech.onrender.com/api/users/sites/", {
+        const response2 = await fetch("http://localhost:8000/api/users/sites/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: inputText,
+            answer: data.answer,
+          }),
+        });
+        
 
       if (response2.ok) {
         const data2 = await response2.json();
@@ -619,6 +476,12 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/user/:id" element={
+              <ProtectedRoute>
+                <UserProfilePage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/"
             element={

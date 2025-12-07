@@ -1,5 +1,6 @@
 // API service for ConfidenTech backend integration
-const API_BASE_URL = 'https://confidentech.onrender.com/api/users';
+// const API_BASE_URL = 'https://confidentech.onrender.com/api/users';
+const API_BASE_URL = 'http://localhost:8000/api/users';
 
 export interface LoginCredentials {
   email: string;
@@ -85,7 +86,6 @@ export const getUserProfile = async () => {
   }
 };
 
-// Register user
 // Register user
 export const registerUser = async (userData: RegisterData): Promise<ApiResponse<{ user: User; message: string }>> => {
   try {

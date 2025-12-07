@@ -12,7 +12,10 @@ EMB = urljoin(OLLAMA_HOST + "/", "api/embeddings")
 
 # Use your locally available Gemma models
 MODEL_A = "gemma3:4b"
-MODEL_B = "deepseek-r1:8b"
+# MODEL_B = "deepseek-r1:8b"
+MODEL_B = "gemma3:4b"
+EMBED_MODEL = "nomic-embed-text:latest"
+
 # Pick a small embedding model if you have one (pull one if missing)
 EMBED_MODEL = "nomic-embed-text"
 

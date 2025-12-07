@@ -22,8 +22,7 @@ export function LoginPage() {
     try {
       const result = await login(email, password);
       
-      if (result.success) {
-        // Navigate to dashboard on successful login
+      if (result.success && result.user) {
         navigate('/');
       } else {
         setError(result.error || 'Login failed');
@@ -35,6 +34,7 @@ export function LoginPage() {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

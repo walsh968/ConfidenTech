@@ -1,11 +1,14 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, {createContext, useContext, useState, useEffect, ReactNode, useCallback} from "react";
 import { User, getUserProfile, logoutUser } from "../services/api";
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; error?: string; user?: User }>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -24,63 +27,43 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const isAuthenticated = !!user;
 
-  // 🔥 NEW: First ping the backend health route
-  const checkBackendAvailable = async () => {
-    try {
-      const res = await fetch(
-        "https://confidentech.onrender.com/api/users/health/",
-        { method: "GET" }
-      );
-      return res.ok;
-    } catch {
-      return false;
-    }
-  };
-
-  // 🔥 FIX: Only check /profile/ if backend is reachable AND cookies exist
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
+    console.log("[Auth] checkAuth start");
     setIsLoading(true);
+    try {
+      const response: any = await getUserProfile();
+      console.log("[Auth] profile response:", response);
 
-    const backendOk = await checkBackendAvailable();
-    if (!backendOk) {
-      console.warn("Backend unreachable — skipping profile check");
+      if (response.success && response.data) {
+        const userData = response.data.user ?? response.data;
+        setUser(userData as User);
+      } else {
+        setUser(null);
+      }
+    } catch (e) {
+      console.warn("[Auth] checkAuth error:", e);
       setUser(null);
+    } finally {
+      console.log("[Auth] checkAuth finished, setIsLoading(false)");
       setIsLoading(false);
-      return;
     }
+  }, []);
 
-    // Don't call /profile/ unless cookies exist
-    const hasSessionCookie = document.cookie.includes("sessionid=");
-    if (!hasSessionCookie) {
-      console.log("No session cookie — user is logged out");
-      setUser(null);
-      setIsLoading(false);
-      return;
-    }
-
-    // Now safe to call /profile/
-    const response = await getUserProfile();
-
-    if (response.success && response.data) {
-      setUser(response.data.user);
-    } else {
-      setUser(null);
-    }
-
-    setIsLoading(false);
-  };
-
-  const login = async (email: string, password: string) => {
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; error?: string; user?: User }> => {
     const { loginUser } = await import("../services/api");
     const response = await loginUser({ email, password });
 
     if (response.success && response.data) {
-      setUser(response.data.user);
-      return { success: true };
+      const loggedInUser = response.data.user;
+      setUser(loggedInUser);
+      return { success: true, user: loggedInUser };
     }
 
     return {
@@ -94,20 +77,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = async () => {
+    const currentUser = user; 
     try {
       await logoutUser();
     } catch (e) {
       console.error("Logout error:", e);
     }
+
     setUser(null);
   };
 
   useEffect(() => {
+
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAuthenticated, login, logout, checkAuth }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, isAuthenticated, login, logout, checkAuth }}
+    >
       {children}
     </AuthContext.Provider>
   );

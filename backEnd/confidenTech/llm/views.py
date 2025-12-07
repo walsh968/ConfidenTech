@@ -89,18 +89,14 @@ def _build_explanation(result: dict, prompt: str, best_answer: str, final_confid
         print(f"Error in _build_explanation: {e}")
         return {"reason": f"Failed to generate explanation (Error: {type(e).__name__})."}
 
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-@method_decorator(csrf_exempt, name='dispatch')
+@csrf_exempt                       # ✅ 函数视图用这个关 CSRF
+@api_view(['POST'])               # 前端只会 POST，就用 POST
+@permission_classes([AllowAny])    # ✅ 本地先不要求登录
 def get_confidence_score(request):
     """
     Take in a prompt from the front end, and retrieve an AI output and confidence score
     """
-    if request.method == 'POST':
-        prompt = (request.data.get('text') or '').strip()
-    else:
-        prompt = _get_prompt_from_request(request)
+    prompt = (request.data.get('text') or '').strip()
 
     if not prompt:
         return Response({'error': 'Prompt is empty'}, status=status.HTTP_400_BAD_REQUEST)
@@ -124,15 +120,62 @@ def get_confidence_score(request):
         best_answer=result.get("best_answer"),
     )
 
-    explanation = _build_explanation(result, prompt, log_entry.best_answer, log_entry.final_confidence)
-
-    explanation = _build_explanation(result, prompt, log_entry.best_answer, log_entry.final_confidence)
+    explanation = _build_explanation(
+        result, prompt, log_entry.best_answer, log_entry.final_confidence
+    )
 
     return Response(
-        {'confidence': log_entry.final_confidence, 'answer': log_entry.best_answer, 'explanation': explanation},
-        {'confidence': log_entry.final_confidence, 'answer': log_entry.best_answer, 'explanation': explanation},
-        status=status.HTTP_200_OK
+        {
+            "confidence": log_entry.final_confidence,
+            "answer": log_entry.best_answer,
+            "explanation": explanation,
+        },
+        status=status.HTTP_200_OK,
     )
+
+# @api_view(['GET', 'POST'])
+# @permission_classes([IsAuthenticated])
+# @method_decorator(csrf_exempt, name='dispatch')
+# def get_confidence_score(request):
+#     """
+#     Take in a prompt from the front end, and retrieve an AI output and confidence score
+#     """
+#     if request.method == 'POST':
+#         prompt = (request.data.get('text') or '').strip()
+#     else:
+#         prompt = _get_prompt_from_request(request)
+
+#     if not prompt:
+#         return Response({'error': 'Prompt is empty'}, status=status.HTTP_400_BAD_REQUEST)
+
+#     result = confidence_and_answer(prompt)
+
+#     log_entry = AIResponseLog.objects.create(
+#         input_query=prompt,
+#         model_a=result.get("model_a"),
+#         model_b=result.get("model_b"),
+#         embed_model=result.get("embed_model"),
+#         model_a_confidence=result.get("a_self"),
+#         model_b_confidence=result.get("b_self"),
+#         agreement_score=result.get("agreement"),
+#         final_confidence=(
+#             result.get("a_conf_pct")
+#             if result.get("best_model") == result.get("model_a")
+#             else result.get("b_conf_pct")
+#         ),
+#         best_model=result.get("best_model"),
+#         best_answer=result.get("best_answer"),
+#     )
+
+#     explanation = _build_explanation(result, prompt, log_entry.best_answer, log_entry.final_confidence)
+
+#     explanation = _build_explanation(result, prompt, log_entry.best_answer, log_entry.final_confidence)
+
+#     return Response(
+#         {'confidence': log_entry.final_confidence, 'answer': log_entry.best_answer, 'explanation': explanation},
+#         {'confidence': log_entry.final_confidence, 'answer': log_entry.best_answer, 'explanation': explanation},
+#         status=status.HTTP_200_OK
+#     )
 
 def _generate_raw_payload(prompt: str) -> dict:
     result = confidence_and_answer(prompt)

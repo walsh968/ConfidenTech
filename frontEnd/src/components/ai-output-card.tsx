@@ -6,11 +6,10 @@ import { FeedbackWidget } from "./feedback-widget";
 import { Separator } from "./ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { Button } from "./ui/button";
-import { ChevronDown, ChevronUp, Clock } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import type { AIOutput, ViewMode } from "../App";
 import React from "react";
-
 
 interface AIOutputCardProps {
   output: AIOutput;
@@ -26,6 +25,7 @@ export function AIOutputCard({
   onReferenceRating,
 }: AIOutputCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const question = output.question ?? "Ask a Question?";
   const answer = output.text ?? output.text;
@@ -70,37 +70,38 @@ export function AIOutputCard({
 
       return (
         <div className="space-y-2">
-          {parts.map((part, index) => {
-            // Skip empty parts
-            if (!part.trim()) return null;
+          {parts
+            .map((part, index) => {
+              // Skip empty parts
+              if (!part.trim()) return null;
 
-            // If this is a numbered marker (like "1. "), combine it with the next part
-            if (/^\d+\.\s+$/.test(part)) {
-              const nextPart = parts[index + 1] || "";
-              // Combine the marker with its content
-              const combined = part + nextPart;
-              // Mark the next part as used
-              if (index + 1 < parts.length) {
-                parts[index + 1] = "";
+              // If this is a numbered marker (like "1. "), combine it with the next part
+              if (/^\d+\.\s+$/.test(part)) {
+                const nextPart = parts[index + 1] || "";
+                // Combine the marker with its content
+                const combined = part + nextPart;
+                // Mark the next part as used
+                if (index + 1 < parts.length) {
+                  parts[index + 1] = "";
+                }
+                return (
+                  <div key={index} className="leading-relaxed">
+                    {combined.trim()}
+                  </div>
+                );
               }
-              return (
-                <div key={index} className="leading-relaxed">
-                  {combined.trim()}
-                </div>
-              );
-            }
-            // Regular text (not immediately after a numbered marker)
-            // Check if previous part was not a numbered marker
-            const prevPart = parts[index - 1];
-            if (!prevPart || !/^\d+\.\s+$/.test(prevPart)) {
-              return (
-                <div key={index} className="leading-relaxed">
-                  {part.trim()}
-                </div>
-              );
-            }
-            return null;
-          }).filter(Boolean)}
+              // Regular text (not immediately after a numbered marker)
+              const prevPart = parts[index - 1];
+              if (!prevPart || !/^\d+\.\s+$/.test(prevPart)) {
+                return (
+                  <div key={index} className="leading-relaxed">
+                    {part.trim()}
+                  </div>
+                );
+              }
+              return null;
+            })
+            .filter(Boolean)}
         </div>
       );
     }
@@ -109,7 +110,18 @@ export function AIOutputCard({
     return <p className="leading-relaxed whitespace-pre-line">{cleanText}</p>;
   };
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(answer || "");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy to clipboard", err);
+    }
+  };
+
   const contentId = React.useId();
+
   return (
     <Card className="w-full shadow-sm border hover:shadow-md transition-shadow">
       <CardHeader className="pb-4">
@@ -145,46 +157,76 @@ export function AIOutputCard({
           )}
 
           {/* Answer */}
-          <div>
-            {formatAnswer(answer)}
-          </div>
+          <div>{formatAnswer(answer)}</div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <FeedbackWidget
               feedback={output.userFeedback}
               onFeedbackChange={(feedback) => onFeedbackChange(output.id, feedback)}
             />
 
-            {viewMode === "critical" && (
-              <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-                <CollapsibleTrigger asChild aria-label="Show details" aria-controls={contentId}>
-                  <Button variant="ghost" size="sm" className="gap-1 hover:bg-accent/10 hover:text-accent">
-                    {isExpanded ? (
-                      <>
-                        <ChevronUp className="h-4 w-4" />
-                        Hide Details
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-4 w-4" />
-                        Show References
-                      </>
-                    )}
-                  </Button>
-                </CollapsibleTrigger>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopy}
+                className="gap-1"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    Copy
+                  </>
+                )}
+              </Button>
 
-                <CollapsibleContent className="mt-4" id={contentId} role="region">
-                  <Separator className="mb-4" />
-                  <ReferenceSection
-                    references={output.references}
-                    comparisonSummary={output.comparisonSummary}
-                    onReferenceRating={(referenceId, rating) => onReferenceRating(output.id, referenceId, rating)}
-                    answerText={answer}
-                    sentenceAlignment={output.sentenceAlignment}
-                  />
-                </CollapsibleContent>
-              </Collapsible>
-            )}
+              {viewMode === "critical" && (
+                <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+                  <CollapsibleTrigger
+                    asChild
+                    aria-label="Show details"
+                    aria-controls={contentId}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1 hover:bg-accent/10 hover:text-accent"
+                    >
+                      {isExpanded ? (
+                        <>
+                          <ChevronUp className="h-4 w-4" />
+                          Hide Details
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-4 w-4" />
+                          Show References
+                        </>
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent className="mt-4" id={contentId} role="region">
+                    <Separator className="mb-4" />
+                    <ReferenceSection
+                      references={output.references}
+                      comparisonSummary={output.comparisonSummary}
+                      onReferenceRating={(referenceId, rating) =>
+                        onReferenceRating(output.id, referenceId, rating)
+                      }
+                      answerText={answer}
+                      sentenceAlignment={output.sentenceAlignment}
+                      explanation={undefined}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>
