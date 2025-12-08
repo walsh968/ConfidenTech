@@ -48,7 +48,10 @@ def _ollama_generate(model: str, prompt: str) -> tuple[str, float]:
     """Ask a model to return JSON {answer, self_confidence}."""
     system = (
         "You are a precise assistant. "
-        "Return ONLY valid JSON: {\"answer\": string, \"self_confidence\": number between 0 and 1}."
+        "Return ONLY valid JSON with two fields: 'answer' and 'self_confidence'. "
+        "The 'answer' must ONLY contain the factual response to the user. "
+        "Do NOT mention the confidence score inside the 'answer' text. "
+        "Format: {\"answer\": string, \"self_confidence\": number between 0.0 and 1.0}."
     )
     payload = {
         "model": model,

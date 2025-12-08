@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { AIOutputCard } from './ai-output-card';
 import { AIOutput } from '../App';
 import React from 'react';
