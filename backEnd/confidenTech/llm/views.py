@@ -126,10 +126,9 @@ def get_confidence_score(request):
 
     explanation = _build_explanation(result, prompt, log_entry.best_answer, log_entry.final_confidence)
 
-    explanation = _build_explanation(result, prompt, log_entry.best_answer, log_entry.final_confidence)
+    #explanation = _build_explanation(result, prompt, log_entry.best_answer, log_entry.final_confidence)
 
     return Response(
-        {'confidence': log_entry.final_confidence, 'answer': log_entry.best_answer, 'explanation': explanation},
         {'confidence': log_entry.final_confidence, 'answer': log_entry.best_answer, 'explanation': explanation},
         status=status.HTTP_200_OK
     )
