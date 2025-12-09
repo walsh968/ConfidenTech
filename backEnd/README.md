@@ -1,4 +1,4 @@
-# ConfidenTech Backend API 
+# ConfidenTech Backend API  
 
 Django REST API with MongoDB integration for user authentication and management.
 
