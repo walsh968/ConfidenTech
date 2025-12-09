@@ -11,7 +11,7 @@ API_KEY = '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'
 URL = 'https://api.groq.com/openai/v1'
 
 client = OpenAI(api_key=API_KEY, base_url=URL)
-openai_client = OpenAI(api_key=settings.OPENAIKEY)
+openai_client = OpenAI()
 # ---------------- Config ----------------
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
 GEN = urljoin(OLLAMA_HOST + "/", "api/generate")
