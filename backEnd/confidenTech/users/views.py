@@ -276,7 +276,7 @@ def get_confidence_score(request):
 
 
 from googleapiclient.discovery import build
-from confidenTech.confidenTech import settings
+from django.conf import settings
 
 API_KEY = settings.GOOGLE_API_KEY
 CSE_ID = settings.GOOGLE_CSE_ID
