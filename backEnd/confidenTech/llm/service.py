@@ -4,17 +4,27 @@ from typing import TypedDict
 import requests, json, numpy as np, os
 from langgraph.graph import StateGraph, START, END
 from urllib.parse import urljoin
+from openai import OpenAI
+from django.conf import settings
 
+API_KEY = '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'
+URL = 'https://api.groq.com/openai/v1'
+
+client = OpenAI(api_key=API_KEY, base_url=URL)
+openai_client = OpenAI()
 # ---------------- Config ----------------
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
 GEN = urljoin(OLLAMA_HOST + "/", "api/generate")
 EMB = urljoin(OLLAMA_HOST + "/", "api/embeddings")
 
 # Use your locally available Gemma models
-MODEL_A = "gemma3:4b"
-MODEL_B = "gemma3:4b"
+#MODEL_A = "gemma3:4b"
+#MODEL_B = "deepseek-r1:8b"
+MODEL_A = 'llama-3.3-70b-versatile'
+MODEL_B = 'llama-3.1-8b-instant'
 # Pick a small embedding model if you have one (pull one if missing)
-EMBED_MODEL = "nomic-embed-text"
+#EMBED_MODEL = "nomic-embed-text"
+EMBED_MODEL = "text-embedding-3-small"
 
 # ---------------- State ----------------
 class State(TypedDict, total=False):
@@ -53,27 +63,45 @@ def _ollama_generate(model: str, prompt: str) -> tuple[str, float]:
         "Do NOT mention the confidence score inside the 'answer' text. "
         "Format: {\"answer\": string, \"self_confidence\": number between 0.0 and 1.0}."
     )
-    payload = {
-        "model": model,
-        "prompt": f"{system}\n\nUser: {prompt}\nAssistant:",
-        "format": "json",
-        "options": {"temperature": 0.2},
-        "stream": False,
-    }
-    r = requests.post(GEN, json=payload, timeout=120)
-    r.raise_for_status()
-    raw = r.json().get("response", "").strip()
+    # payload = {
+    #     "model": model,
+    #     "prompt": f"{system}\n\nUser: {prompt}\nAssistant:",
+    #     "format": "json",
+    #     "options": {"temperature": 0.2},
+    #     "stream": False,
+    # }
+    # r = requests.post(GEN, json=payload, timeout=120)
+    # r.raise_for_status()
+    # raw = r.json().get("response", "").strip()
+
+    completion = client.chat.completions.create(
+        model=model,
+        temperature=0.2,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ],
+    )
+
+    raw = completion.choices[0].message.content.strip()
     data = json.loads(raw)
     answer = str(data.get("answer", "")).strip()
     self_conf = float(max(0.0, min(1.0, data.get("self_confidence", 0.0))))
     return answer, self_conf
 
 def _embed(text: str, model: str) -> np.ndarray:
-    r = requests.post(EMB, json={"model": model, "prompt": text}, timeout=30)
-    r.raise_for_status()
-    vec = r.json().get("embedding")
-    if not isinstance(vec, list):
-        raise RuntimeError("Invalid embedding response from Ollama.")
+    # r = requests.post(EMB, json={"model": model, "prompt": text}, timeout=30)
+    # r.raise_for_status()
+
+    r = openai_client.embeddings.create(
+        model=model,
+        input=text,
+    )
+    #vec = r.json().get("embedding")
+    vec = r.data[0].embedding
+    # if not isinstance(vec, list):
+    #     raise RuntimeError("Invalid embedding response from Ollama.")
     return np.array(vec, dtype=float)
 
 def _gen_with_logprobs(prompt: str, model: str, *, max_tokens: int = 256, topk: int = 5):
@@ -195,9 +223,18 @@ def _generate_explanation_text(prompt: str, answer: str, final_score: int, agree
     }
 
     try:
-        r = requests.post(GEN, json=payload, timeout=120)
-        r.raise_for_status()
-        response_text = r.json().get("response", "").strip() # Extract the generated text
+        # r = requests.post(GEN, json=payload, timeout=120)
+        # r.raise_for_status()
+        # response_text = r.json().get("response", "").strip() # Extract the generated text
+        completion = client.chat.completions.create(
+            model=MODEL_A,  # or whichever Groq model you prefer for explanations
+            temperature=0.3,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        response_text = completion.choices[0].message.content.strip()
 
         return response_text or "No explanation could be generated."
 

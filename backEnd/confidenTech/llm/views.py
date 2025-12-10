@@ -91,7 +91,7 @@ def _build_explanation(result: dict, prompt: str, best_answer: str, final_confid
 
 
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 @method_decorator(csrf_exempt, name='dispatch')
 def get_confidence_score(request):
     """

@@ -60,20 +60,20 @@ export function AIOutputCard({
   const formatAnswer = (text: string) => {
     // Remove markdown bold markers (**)
     const cleanText = text.replace(/\*\*/g, '');
-    
+
     // Check if the text contains numbered lists (pattern: number followed by period and space)
     const numberedListRegex = /\d+\.\s+/;
-    
+
     if (numberedListRegex.test(cleanText)) {
       // Split the text by numbered list items, keeping the delimiters
       const parts = cleanText.split(/(\d+\.\s+)/g);
-      
+
       return (
         <div className="space-y-2">
           {parts.map((part, index) => {
             // Skip empty parts
             if (!part.trim()) return null;
-            
+
             // If this is a numbered marker (like "1. "), combine it with the next part
             if (/^\d+\.\s+$/.test(part)) {
               const nextPart = parts[index + 1] || "";
@@ -104,7 +104,7 @@ export function AIOutputCard({
         </div>
       );
     }
-    
+
     // If no numbered lists, render normally but preserve line breaks
     return <p className="leading-relaxed whitespace-pre-line">{cleanText}</p>;
   };
@@ -125,8 +125,8 @@ export function AIOutputCard({
               </div>
             </div>
           </div>
-          <ConfidenceIndicator 
-            confidence={output.confidence} 
+          <ConfidenceIndicator
+            confidence={output.confidence}
             viewMode={viewMode}
             explanation={getConfidenceExplanation()}
           />
@@ -134,58 +134,60 @@ export function AIOutputCard({
       </CardHeader>
 
       <CardContent className="space-y-6">
-  <div className="space-y-3 w-full">
-    {/* Question */}
-    {question && question !== "Ask a Question?" && (
-      <div className="flex justify-end w-full">
-        <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm max-w-[80%] ml-auto">
-          <p className="leading-relaxed font-medium text-right">{question}</p>
-        </div>
-      </div>
-    )}
+        <div className="space-y-3 w-full">
+          {/* Question */}
+          {question && question !== "Ask a Question?" && (
+            <div className="flex justify-end w-full">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm max-w-[80%] ml-auto">
+                <p className="leading-relaxed font-medium text-right">{question}</p>
+              </div>
+            </div>
+          )}
 
-    {/* Answer */}
-    <div>
-      {formatAnswer(answer)}
-    </div>
+          {/* Answer */}
+          <div>
+            {formatAnswer(answer)}
+          </div>
 
-      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-      <div className="flex items-center justify-between mt-4">
-      <FeedbackWidget
-        feedback={output.userFeedback}
-        onFeedbackChange={(feedback) => onFeedbackChange(output.id, feedback)}
-      />
-        <CollapsibleTrigger asChild aria-label="Show details" aria-controls={contentId}>
-          <Button variant="ghost" size="sm" className="gap-1 hover:bg-accent/10 hover:text-accent">
-            {isExpanded ? (
-              <>
-                <ChevronUp className="h-4 w-4" />
-                Hide Details
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-4 w-4" />
-                Show References
-              </>
+          <div className="flex items-center justify-between">
+            <FeedbackWidget
+              feedback={output.userFeedback}
+              onFeedbackChange={(feedback) => onFeedbackChange(output.id, feedback)}
+            />
+
+            {viewMode === "critical" && (
+              <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+                <CollapsibleTrigger asChild aria-label="Show details" aria-controls={contentId}>
+                  <Button variant="ghost" size="sm" className="gap-1 hover:bg-accent/10 hover:text-accent">
+                    {isExpanded ? (
+                      <>
+                        <ChevronUp className="h-4 w-4" />
+                        Hide Details
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4" />
+                        Show References
+                      </>
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+
+                <CollapsibleContent className="mt-4" id={contentId} role="region">
+                  <Separator className="mb-4" />
+                  <ReferenceSection
+                    references={output.references}
+                    comparisonSummary={output.comparisonSummary}
+                    onReferenceRating={(referenceId, rating) => onReferenceRating(output.id, referenceId, rating)}
+                    answerText={answer}
+                    sentenceAlignment={output.sentenceAlignment}
+                  />
+                </CollapsibleContent>
+              </Collapsible>
             )}
-          </Button>
-        </CollapsibleTrigger>
-      </div>
-        <CollapsibleContent className="mt-4" id={contentId} role="region">
-          <Separator className="mb-4" />
-          <ReferenceSection
-            references={output.references}
-            explanation={output.explanation}
-            comparisonSummary={output.comparisonSummary}
-            onReferenceRating={(referenceId, rating) => onReferenceRating(output.id, referenceId, rating)}
-            answerText={answer}
-            sentenceAlignment={output.sentenceAlignment}
-          />
-        </CollapsibleContent>
-      </Collapsible>
-    
-  </div>
-</CardContent>
+          </div>
+        </div>
+      </CardContent>
     </Card>
   );
 }
