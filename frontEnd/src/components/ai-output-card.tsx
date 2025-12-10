@@ -149,45 +149,43 @@ export function AIOutputCard({
             {formatAnswer(answer)}
           </div>
 
-          <div className="flex items-center justify-between">
-            <FeedbackWidget
-              feedback={output.userFeedback}
-              onFeedbackChange={(feedback) => onFeedbackChange(output.id, feedback)}
-            />
-
-            {viewMode === "critical" && (
-              <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-                <CollapsibleTrigger asChild aria-label="Show details" aria-controls={contentId}>
-                  <Button variant="ghost" size="sm" className="gap-1 hover:bg-accent/10 hover:text-accent">
-                    {isExpanded ? (
-                      <>
-                        <ChevronUp className="h-4 w-4" />
-                        Hide Details
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-4 w-4" />
-                        Show References
-                      </>
-                    )}
-                  </Button>
-                </CollapsibleTrigger>
-
-                <CollapsibleContent className="mt-4" id={contentId} role="region">
-                  <Separator className="mb-4" />
-                  <ReferenceSection
-                    references={output.references}
-                    comparisonSummary={output.comparisonSummary}
-                    onReferenceRating={(referenceId, rating) => onReferenceRating(output.id, referenceId, rating)}
-                    answerText={answer}
-                    sentenceAlignment={output.sentenceAlignment}
-                  />
-                </CollapsibleContent>
-              </Collapsible>
+          <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+      <div className="flex items-center justify-between mt-4">
+      <FeedbackWidget
+        feedback={output.userFeedback}
+        onFeedbackChange={(feedback) => onFeedbackChange(output.id, feedback)}
+      />
+        <CollapsibleTrigger asChild aria-label="Show details" aria-controls={contentId}>
+          <Button variant="ghost" size="sm" className="gap-1 hover:bg-accent/10 hover:text-accent">
+            {isExpanded ? (
+              <>
+                <ChevronUp className="h-4 w-4" />
+                Hide Details
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4" />
+                Show References
+              </>
             )}
-          </div>
-        </div>
-      </CardContent>
+          </Button>
+        </CollapsibleTrigger>
+      </div>
+        <CollapsibleContent className="mt-4" id={contentId} role="region">
+          <Separator className="mb-4" />
+          <ReferenceSection
+            references={output.references}
+            explanation={output.explanation}
+            comparisonSummary={output.comparisonSummary}
+            onReferenceRating={(referenceId, rating) => onReferenceRating(output.id, referenceId, rating)}
+            answerText={answer}
+            sentenceAlignment={output.sentenceAlignment}
+          />
+        </CollapsibleContent>
+      </Collapsible>
+    
+  </div>
+</CardContent>
     </Card>
   );
 }

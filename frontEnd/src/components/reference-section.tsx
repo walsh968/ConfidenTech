@@ -6,7 +6,6 @@ import { cn } from "./ui/utils";
 import { HighlightedText } from "./highlighted-text";
 import React from "react";
 import { Explanation } from "../App";
-import { Explanation } from "../App";
 
 
 interface Reference {
